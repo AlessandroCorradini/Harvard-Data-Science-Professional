@@ -1,0 +1,289 @@
+---
+title: "05 - Classification with More than Two Classes and the Caret Package Comprehension Check"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **Trees and Random Forests**
+### **Question 1**
+
+Create a simple dataset where the outcome grows 0.75 units on average for every increase in a predictor, using this code:
+
+```{r, include=TRUE}
+
+library(rpart)
+library(dplyr)
+library(ggplot2)
+
+n <- 1000
+sigma <- 0.25
+x <- rnorm(n, 0, 1)
+y <- 0.75 * x + rnorm(n, 0, sigma)
+dat <- data.frame(x = x, y = y)
+```
+
+Which code correctly uses rpart to fit a regression tree and saves the result to fit?
+
+```{r, include=TRUE}
+fit <- rpart(y ~ ., data = dat)
+```
+
+- ```fit <- rpart(y ~ .)```
+- ```fit <- rpart(y, ., data = dat)```
+- ```fit <- rpart(x ~ ., data = dat)```
+- ```fit <- rpart(y ~ ., data = dat)``` [X]
+
+<br/>
+
+### **Question 2**
+
+Which of the following plots correctly shows the final tree obtained in Q1?
+
+```{r, include=TRUE}
+plot(fit)
+text(fit)
+```
+
+### **Question 3**
+
+Below is most of the code to make a scatter plot of ```y``` versus ```x``` along with the predicted values based on the fit.
+
+```{r, include=TRUE}
+dat %>% 
+	mutate(y_hat = predict(fit)) %>% 
+	ggplot() +
+	geom_point(aes(x, y)) +
+	geom_step(aes(x, y_hat), col=2)
+```
+
+Which line of code should be used to replace #BLANK in the code above?
+
+- ```geom_step(aes(x, y_hat), col=2)``` [X]
+- ```geom_smooth(aes(y_hat, x), col=2)```
+- ```geom_quantile(aes(x, y_hat), col=2)```
+- ```geom_step(aes(y_hat, x), col=2)```
+
+### **Question 4**
+
+Now run Random Forests instead of a regression tree using randomForest from the ```__randomForest__``` package, and remake the scatterplot with the prediction line. Part of the code is provided for you below.
+
+```{r, include=TRUE}
+library(randomForest)
+fit <- randomForest(y ~ x, data = dat)
+dat %>% 
+	mutate(y_hat = predict(fit)) %>% 
+	ggplot() +
+	geom_point(aes(x, y)) +
+	geom_step(aes(x, y_hat), col = 2)
+```	
+
+What code should replace #BLANK in the provided code?
+
+- ```randomForest(y ~ x, data = dat)``` [X]
+- ```randomForest(x ~ y, data = dat)```
+- ```randomForest(y ~ x, data = data)```
+- ```randomForest(x ~ y)```
+
+### **Question 5**
+
+Use the plot function to see if the Random Forest from Q4 has converged or if we need more trees.
+
+```{r, include=TRUE}
+plot(fit) 
+```
+
+### **Question 6**
+
+It seems that the default values for the Random Forest result in an estimate that is too flexible (unsmooth). Re-run the Random Forest but this time with a node size of 50 and a maximum of 25 nodes. Remake the plot.
+
+Part of the code is provided for you below.
+
+```{r, include=TRUE}
+library(randomForest)
+fit <- randomForest(y ~ x, data = dat, nodesize = 50, maxnodes = 25)
+dat %>% 
+	mutate(y_hat = predict(fit)) %>% 
+	ggplot() +
+	geom_point(aes(x, y)) +
+	geom_step(aes(x, y_hat), col = 2)
+```
+
+What code should replace #BLANK in the provided code?
+
+- ```randomForest(y ~ x, data = dat, nodesize = 25, maxnodes = 25)```
+- ```randomForest(y ~ x, data = dat, nodes = 50, max = 25)```
+- ```randomForest(x ~ y, data = dat, nodes = 50, max = 25)```
+- ```randomForest(y ~ x, data = dat, nodesize = 50, maxnodes = 25)``` [X]
+- ```randomForest(x ~ y, data = dat, nodesize = 50, maxnodes = 25)```
+
+## **Caret Package**
+The exercises in Q1 and Q2 continue the analysis you began in the last set of assessments.
+
+### **Question 1**
+
+In the exercise in Q6 from Comprehension Check: Trees and Random Forests, we saw that changing ```nodesize``` to 50 and setting ```maxnodes``` to 25 yielded smoother results. Let's use the train function to help us pick what the values of ```nodesize``` and ```maxnodes``` should be.
+
+From the caret description of methods, we see that we can't tune the ```maxnodes``` parameter or the ```nodesize``` argument with ```randomForests```. So we will use the ```__Rborist__``` package and tune the ```minNode``` argument. Use the train function to try values ```minNode <- seq(25, 100, 25)```. Set the seed to 1.
+
+```{r, include=TRUE}
+set.seed(1)
+library(caret)
+fit <- train(y ~ ., method = "Rborist",   
+				tuneGrid = data.frame(predFixed = 1, 
+									  minNode = seq(25, 100, 25)),
+				data = dat)
+ggplot(fit)
+```
+
+Which value minimizes the estimated RMSE? 50
+
+### **Question 2**
+
+Part of the code to make a scatterplot along with the prediction from the best fitted model is provided below.
+
+```{r, include=TRUE}
+library(caret)
+dat %>% 
+	mutate(y_hat = predict(fit)) %>% 
+	ggplot() +
+	geom_point(aes(x, y)) +
+    geom_step(aes(x, y_hat), col = 2)
+```   
+
+Which code correctly can be used to replace #BLANK in the code above?
+
+- ```geom_step(aes(y_hat, x), col = 2)``` 
+- ```geom_step(aes(x, y_hat), col = 2)``` [X]
+- ```geom_step(aes(x, y), col = 2)```
+- ```geom_step(aes(x_hat, y_hat), col = 2)```
+- ```geom_smooth(aes(x, y_hat), col = 2)```
+- ```geom_smooth(aes(y_hat, x), col = 2)```
+
+### **Question 3**
+
+Use the ```rpart``` function to fit a classification tree to the ```tissue_gene_expression dataset```. Use the train function to estimate the accuracy. Try out ```cp``` values of ```seq(0, 0.1, 0.01)```. Plot the accuracies to report the results of the best model. Set the seed to 1991.
+
+```{r, include=TRUE}
+library(caret)
+library(dslabs)
+set.seed(1991)
+data("tissue_gene_expression")
+    
+fit <- with(tissue_gene_expression, 
+                train(x, y, method = "rpart",
+                      tuneGrid = data.frame(cp = seq(0, 0.1, 0.01))))
+    
+ggplot(fit)      
+```
+
+Which value of ```cp``` gives the highest accuracy? 0
+
+### **Question 4**
+
+Study the confusion matrix for the best fitting classification tree from the exercise in Q3.
+
+What do you observe happening for the placenta samples?
+
+- Placenta samples are all accurately classified.
+- Placenta samples are being classified as two similar tissues.
+- Placenta samples are being classified somewhat evenly across tissues. [X]
+- Placenta samples not being classified into any of the classes.
+
+
+### **Question 5**
+
+Note that there are only 6 placentas in the dataset. By default, ```rpart``` requires 20 observations before splitting a node. That means that it is difficult to have a node in which placentas are the majority. Rerun the analysis you did in the exercise in Q3, but this time, allow ```rpart``` to split any node by using the argument ```control = rpart.control(minsplit = 0)```. Look at the confusion matrix again to determine whether the accuracy increases. Again, set the seed to 1991.
+
+```{r, include=TRUE}
+set.seed(1991)
+data("tissue_gene_expression")
+    
+fit_rpart <- with(tissue_gene_expression, 
+                      train(x, y, method = "rpart",
+                            tuneGrid = data.frame(cp = seq(0, 0.10, 0.01)),
+                            control = rpart.control(minsplit = 0)))
+ggplot(fit_rpart)
+confusionMatrix(fit_rpart)
+```
+
+What is the accuracy now? 0.9141
+
+### **Question 6**
+
+Plot the tree from the best fitting model of the analysis you ran in Q5.
+
+Which gene is at the first split?
+
+```{r, include=TRUE}
+plot(fit_rpart$finalModel)
+text(fit_rpart$finalModel)
+```
+
+- B3GNT4
+- CAPN3
+- CES2
+- CFHR4
+- CLIP3
+- GPA33 [X]
+- HRH1
+
+
+### **Question 7**
+
+We can see that with just seven genes, we are able to predict the tissue type. Now let's see if we can predict the tissue type with even fewer genes using a Random Forest. Use the train function and the rf method to train a Random Forest. Try out values of mtry ranging from seq(50, 200, 25) (you can also explore other values on your own). What mtry value maximizes accuracy? To permit small nodesize to grow as we did with the classification trees, use the following argument: nodesize = 1.
+
+Note: This exercise will take some time to run. If you want to test out your code first, try using smaller values with ntree. Set the seed to 1991 again.
+
+```{r, include=TRUE}
+set.seed(1991)
+library(randomForest)
+fit <- with(tissue_gene_expression, 
+                train(x, y, method = "rf", 
+                      nodesize = 1,
+                      tuneGrid = data.frame(mtry = seq(50, 200, 25))))
+    
+ggplot(fit)
+```
+
+What value of mtry maximizes accuracy? 100
+
+### **Question 8**
+
+Use the function varImp on the output of train and save it to an object called imp.
+
+```{r, include=TRUE}
+imp <- varImp(fit)
+imp
+```
+
+What should replace #BLANK in the code above?
+
+
+### **Question 9**
+
+The ```rpart``` model we ran above produced a tree that used just seven predictors. Extracting the predictor names is not straightforward, but can be done. If the output of the call to train was ```fit_rpart```, we can extract the names like this:
+
+```{r, include=TRUE}
+tree_terms <- as.character(unique(fit_rpart$finalModel$frame$var[!(fit_rpart$finalModel$frame$var == "<leaf>")]))
+tree_terms
+```
+
+Calculate the variable importance in the Random Forest call for these seven predictors and examine where they rank.
+
+```{r, include=TRUE}
+data_frame(term = rownames(imp$importance), 
+			importance = imp$importance$Overall) %>%
+	mutate(rank = rank(-importance)) %>% arrange(desc(importance)) %>%
+	filter(term %in% tree_terms)
+```
+
+- What is the importance of the CFHR4 gene in the Random Forest call? 35.03253
+- What is the rank of the CFHR4 gene in the Random Forest call? 7

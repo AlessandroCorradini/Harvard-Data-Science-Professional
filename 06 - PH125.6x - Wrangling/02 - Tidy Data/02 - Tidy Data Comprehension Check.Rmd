@@ -1,0 +1,424 @@
+---
+title: "02 - Tidy Data Comprehension Check"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **Tidy Data**
+### **Question 1**
+
+A collaborator sends you a file containing data for three years of average race finish times.
+
+```
+age_group,2015,2016,2017
+20,3:46,3:22,3:50
+30,3:50,3:43,4:43
+40,4:39,3:49,4:51
+50,4:48,4:59,5:01
+```
+
+Are these data considered “tidy” in R? Why or why not?
+
+- Yes. These data are considered “tidy” because each row contains unique observations.
+- Yes. These data are considered “tidy” because there are no missing data in the data frame.
+- No. These data are not considered “tidy” because the variable “year” is stored in the header. [X]
+- No. These data are not considered “tidy” because there are not an equal number of columns and rows.
+
+<br/>
+
+### **Question 2**
+
+Below are four versions of the same dataset. Which one is in a tidy format?
+```
+state abb region population total
+Alabama	AL	South	4779736	135
+Alaska  AK   West 	710231	19
+Arizona  AZ   West	6392017   232
+Arkansas  AR  South	2915918	93
+California  CA   West   37253956  1257
+Colorado  CO   West	5029196	65 [X]
+```
+```
+state abb region    	var  people
+Alabama  AL  South population 4779736
+Alabama  AL  South      total 	135
+Alaska  AK   West population  710231
+Alaska  AK   West  	total  	19
+Arizona  AZ   West population 6392017
+Arizona  AZ   West      total 	232
+```
+```
+state abb Northeast   South North Central 	West
+Alabama  AL        NA 4779736        	NA   	NA
+Alaska  AK        NA  	NA        	NA   710231
+Arizona  AZ        NA  	NA        	NA  6392017
+Arkansas  AR        NA 2915918        	NA   	NA
+California  CA    	NA      NA        	NA 37253956
+Colorado  CO        NA  	NA        	NA  5029196
+```
+```
+state abb region 	rate
+Alabama  AL  South 2.82e-05
+Alaska  AK   West 2.68e-05
+Arizona  AZ   West 3.63e-05
+Arkansas  AR  South 3.19e-05
+California  CA   West 3.37e-05
+Colorado  CO   West 1.29e-05
+```
+
+<br/>
+
+## **Reshaping Data**
+### **Question 1**
+
+Your file called “times.csv” has age groups and average race finish times for three years of marathons.
+
+age_group,2015,2016,2017
+20,3:46,3:22,3:50
+30,3:50,3:43,4:43
+40,4:39,3:49,4:51
+50,4:48,4:59,5:01
+
+You read in the data file using the following command.
+```
+d <- read_csv("times.csv")
+```
+
+Which commands will help you “tidy” the data?
+
+```
+tidy_data <- d %>%
+gather(year, time, `2015`:`2017`) [X]
+```
+```
+tidy_data <- d %>%
+spread(year, time, `2015`:`2017`)
+```
+```
+tidy_data <- d %>%
+gather(age_group, year, time, `2015`:`2017`)
+```
+```
+tidy_data <- d %>%
+gather(time, `2015`:`2017`)
+```
+
+<br/>
+
+### **Question 2**
+
+You have a dataset on U.S. contagious diseases, but it is in the following wide format:
+
+```
+> head(dat_wide)
+state year population Hepatitis A Mumps Polio Rubella
+Alabama 1990    4040587      	86	19    76   	1
+Alabama 1991    4066003      	39	14    65   	0
+Alabama 1992    4097169      	35	12    24   	0
+Alabama 1993    4133242      	40	22    67   	0
+Alabama 1994    4173361      	72	12    39   	0
+Alabama 1995    4216645      	75 	2     38            0
+```
+
+Which of the following would transform this into a tidy dataset, with each row representing an observation of the incidence of each specific disease (as shown below)?
+
+```
+> head(dat_tidy)
+state year population 	disease count
+Alabama 1990	4040587 Hepatitis A	86
+Alabama 1991	4066003 Hepatitis A	39
+Alabama 1992	4097169 Hepatitis A	35
+Alabama 1993	4133242 Hepatitis A	40
+Alabama 1994	4173361 Hepatitis A	72
+Alabama 1995	4216645 Hepatitis A	75
+```
+
+```
+dat_tidy <- dat_wide %>%
+gather (key = count, value = disease, `Hepatitis A`, `Rubella`)
+```      
+``` 
+dat_tidy <- dat_wide %>%
+gather(key - count, value = disease, -state, -year, -population)
+```      
+```
+dat_tidy <- dat_wide %>%
+gather(key = disease, value = count, -state)
+```      
+``` 
+dat_tidy <- dat_wide %>%
+gather(key = disease, value = count, “Hepatitis A”: “Rubella”) [X]
+```      
+<br/>
+
+### **Question 3**
+
+You have successfully formatted marathon finish times into a tidy object called tidy_data. The first few lines are shown below.
+```
+age_group,year,time
+20,2015,03:46
+30,2015,03:50
+40,2015,04:39
+50,2015,04:48
+20,2016,03:22
+```
+
+Select the code that converts these data back to the wide format, where each year has a separate column.
+
+- ```tidy_data %>% spread(time, year)```
+- ```tidy_data %>% spread(year, time)``` [X]
+- ```tidy_data %>% spread(year, age_group) ```
+- ```tidy_data %>% spread(time, year, `2015`:`2017`)```
+
+<br/>
+
+### **Question 4**
+```
+> head(dat)
+state abb region    	var  people
+Alabama  AL  South population 4779736
+Alabama  AL  South  	total 	135
+Alaska  AK   West population  710231
+Alaska  AK   West  	total  	19
+Arizona  AZ   West population 6392017
+Arizona  AZ   West  	total 	232
+```
+
+You would like to transform it into a dataset where population and total are each their own column (shown below). Which code would best accomplish this?
+
+```
+state abb region population total
+Alabama  AL  South	4779736   135
+Alaska  AK   West 	710231	19
+Arizona  AZ   West	6392017   232
+Arkansas  AR  South	2915918	93
+California  CA   West   37253956  1257
+Colorado  CO   West	5029196	65
+```
+
+```dat_tidy <- dat %>% spread(key = var, value = people)``` [X]
+```dat_tidy <- dat %>% spread(key = state:region, value = people)```
+```dat_tidy <- dat %>% spread(key = people, value = var)```
+```dat_tidy <- dat %>% spread(key = region, value = people)```
+
+<br/>
+
+## **Separate and Unite**
+### **Question 1**
+
+A collaborator sends you a file containing data for two years of average race finish times.
+
+```
+age_group,2015_time,2015_participants,2016_time,2016_participants
+20,3:46,54,3:22,62
+30,3:50,60,3:43,58
+40,4:39,29,3:49,33
+50,4:48,10,4:59,14
+```
+
+You read in the data file
+
+```
+d <- read_csv("times.csv")
+```
+
+Which of the answers below best tidys the data?
+
+```
+tidy_data <- d %>%
+	gather(key = “key”, value = “value”, -age_group) %>%
+	separate(col = key, into = c(“year”, “variable_name”), sep = “.”) %>% 
+	spread(key = variable_name, value = value)
+```
+```
+tidy_data <- d %>%
+    	gather(key = “key”, value = “value”, -age_group) %>%
+	separate(col = key, into = c(“year”, “variable_name”), sep = “_”) %>% 
+	spread(key = variable_name, value = value) [X]
+```      
+``` 
+ tidy_data <- d %>%
+    	gather(key = “key”, value = “value”) %>%
+	separate(col = key, into = c(“year”, “variable_name”), sep = “_”) %>% 
+	spread(key = variable_name, value = value)
+```      
+``` 
+tidy_data <- d %>%
+    	gather(key = “key”, value = “value”, -age_group) %>%
+	separate(col = key, into = “year”, sep = “_”) %>% 
+	spread(key = year, value = value)
+```      
+
+<br/>
+
+### **Question 2**
+
+You are in the process of tidying some data on heights, hand length, and wingspan for basketball players in the draft. Currently, you have the following:
+
+```
+> head(stats)
+key		value
+allen_height		75
+allen_hand_length	8.25
+allen_wingspan	79.25
+bamba_height	83.25
+bamba_hand_length 9.75
+bamba_wingspan	94
+```
+
+Select all of the correct commands below that would turn this data into a “tidy” format.
+
+```
+tidy_data <- stats %>%
+	separate(col = key, into = c("player", "variable_name"), sep = "_", extra = "merge") %>% 
+	spread(key = variable_name, value = value) [X]
+```
+```
+tidy_data <- stats %>%
+	separate(col = key, into = c("player", "variable_name1", "variable_name2"), sep = "_", fill = "right") %>% 
+	unite(col = variable_name, variable_name1, variable_name2, sep = "_") %>% 
+	spread(key = variable_name, value = value)
+```
+```
+tidy_data <- stats %>%
+	separate(col = key, into = c("player", "variable_name"), sep = "_") %>% 
+	spread(key = variable_name, value = value)
+```
+
+<br/>
+
+## **Combining Table**
+### **Question 1**
+
+You have created a tab1 and tab2 of state population and election data, similar to our module videos:
+
+```
+> tab1
+   state 	population
+Alabama	4779736
+Alaska     	710231
+Arizona    	6392017
+Delaware     	897934
+District of Columbia     601723
+
+> tab2
+   state 	electoral_votes
+Alabama      9
+Alaska         3
+Arizona        11
+California     55
+Colorado      9
+Connecticut  7
+
+> dim(tab1)
+[1] 5 2
+
+> dim(tab2)
+[1] 6 2
+```
+
+What are the dimensions of the table dat, created by the following command?
+
+```
+dat <- left_join(tab1, tab2, by = “state”)
+```
+
+- 3 rows by 3 columns
+- 5 rows by 2 columns
+- 5 rows by 3 columns [X]
+- 6 rows by 3 columns
+
+<br/>
+
+### **Question 2**
+
+We are still using the tab1 and tab2 tables shown in question 1. What join command would create a new table “dat” with three rows and two columns?
+
+- ```dat <- right_join(tab1, tab2, by = “state”)```
+- ```dat <- full_join(tab1, tab2, by = “state”)```
+- ```dat <- inner_join(tab1, tab2, by = “state”)```
+- ```dat <- semi_join(tab1, tab2, by = “state”)``` [X]
+
+<br/>
+
+## **Binding**
+### **Question 1**
+
+Which of the following are real differences between the join and bind functions?
+
+
+- Binding functions combine by position, while join functions match by variables. [X]
+- Joining functions can join datasets of different dimensions, but the bind functions must match on the appropriate dimension (either same row or column numbers). [X]
+- Bind functions can combine both vectors and dataframes, while join functions work for only for dataframes. [X]
+- The join functions are a part of the dplyr package and have been optimized for speed, while the bind functions are inefficient base functions.
+
+<br/>
+
+## **Set Operators**
+### **Question 1**
+
+We have two simple tables, shown below:
+
+```
+> df1
+ x     y    
+ a     a    
+ b     a    
+
+> df2
+ x     y    
+ a     a    
+ a     b  
+```  
+
+Which command would result in the following table?
+
+```
+> final
+ x     y    
+ b     a   
+``` 
+
+- ```final <- union(df1, df2)```
+- ```final <- setdiff(df1, df2)``` [X]
+- ```final <- setdiff(df2, df1)```
+- ```final <- intersect(df1, df2)```
+
+<br/>
+
+## **Web Scraping**
+### **Question 1**
+
+Which feature of html documents allows us to extract the table that we are interested in?
+
+- Html is easily converted to to xml, which can then be used for extracting tables.
+- All elements in an html page are specified as “nodes”; we can use the node “tables” to identify and extract the specific table we are interested in before we do additional data cleaning. [X]
+- All tables in html documents are stored in separate files that you can download via the html code.
+- Tables in html are formatted as csv tables, which we can easily copy and process in R.
+
+<br/>
+
+### **Question 2**
+
+In the video, we use the following code to extract the murders table (tab) from our downloaded html file h:
+
+```
+tab <- h %>% html_nodes(“table”) 
+tab <- tab[[2]] %>% 
+	html_table
+```
+
+Why did we use the ```html_nodes()``` command instead of the html_node command?
+
+- The ```html_node``` command only selects the first node of a specified type. In this example the first “table” node is a legend table and not the actual data we are interested in. [X]
+- The ```html_nodes``` command allows us to specify what type of node we want to extract, while the ```html_node``` command does not.
+- It does not matter; the two commands are interchangeable.
+- We used ```html_nodes``` so that we could specify the second “table” element using the ```tab[[2]]``` command. [X]

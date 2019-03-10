@@ -1,0 +1,151 @@
+---
+title: "Assessment 07 - The t-distribution"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **Using the t-Distribution**
+We know that, with a normal distribution, only 5% of values are more than 2 standard deviations away from the mean.
+
+Calculate the probability of seeing t-distributed random variables being more than 2 in absolute value when the degrees of freedom are 3.
+
+Instructions
+
+Use the ```pt``` function to calculate the probability of seeing a value less than or equal to the argument.
+
+```{r, include=TRUE}
+# Calculate the probability of seeing t-distributed random variables being more than 2 in absolute value when 'df = 3'.
+1 - pt(2, 3) + pt(-2, 3)
+```
+
+<br/>
+
+## **Plotting the t-distribution**
+Now use sapply to compute the same probability for degrees of freedom from 3 to 50.
+
+Make a plot and notice when this probability converges to the normal distribution's 5%.
+
+Instructions
+
+- Make a vector called ```df``` that contains a sequence of numbers from 3 to 50.
+- Using ```function```, make a function called ```pt_func``` that recreates the calculation for the probability that a value is greater than 2 as an absolute value for any given degrees of freedom.
+- Use ```sapply``` to apply the ```pt_func``` function across all values contained in ```df```. Call these probabilities ```probs```.
+- Use the ```plot``` function to plot ```df``` on the x-axis and ```probs``` on the y-axis.
+
+
+```{r}
+# Generate a vector 'df' that contains a sequence of numbers from 3 to 50
+df <- seq(3,50)
+
+# Make a function called 'pt_func' that calculates the probability that a value is more than |2| for any degrees of freedom 
+pt_func <- function(n) {
+  1 - pt(2, n) + pt(-2, n)
+}
+
+# Generate a vector 'probs' that uses the `pt_func` function to calculate the probabilities
+probs <- sapply(df, pt_func)
+
+# Plot 'df' on the x-axis and 'probs' on the y-axis
+plot(df, probs)
+```
+
+<br/>
+
+## **Sampling From the Normal Distribution**
+In a previous section, we repeatedly took random samples of 50 heights from a distribution of heights. We noticed that about 95% of the samples had confidence intervals spanning the true population mean.
+
+Re-do this Monte Carlo simulation, but now instead of N=50, use N=15. Notice what happens to the proportion of hits.
+
+Instructions
+
+- Use the ```replicate``` function to carry out the simulation. Specify the number of times you want the code to run and, within brackets, the three lines of code that should run.
+- First use the ```sample``` function to randomly sample ```N``` values from ```x```.
+- Second, create a vector called i```nterval``` that calculates the 95% confidence interval for the sample. You will use the ```qnorm``` function.
+- Third, use the ```between``` function to determine if the population mean ```mu``` is contained between the confidence intervals.
+- Save the results of the Monte Carlo function to a vector called ```res```.
+- Use the ```mean``` function to determine the proportion of hits in ```res```.
+
+```{r, include=TRUE}
+# Load the neccessary libraries and data
+library(dslabs)
+library(dplyr)
+data(heights)
+
+# Use the sample code to generate 'x', a vector of male heights
+x <- heights %>% filter(sex == "Male") %>%
+  .$height
+
+# Create variables for the mean height 'mu', the sample size 'N', and the number of times the simulation should run 'B'
+mu <- mean(x)
+N <- 15
+B <- 10000
+
+# Use the `set.seed` function to make sure your answer matches the expected result after random sampling
+set.seed(1)
+
+# Generate a logical vector 'res' that contains the results of the simulations
+res <- replicate(B, {
+  s <- sample(x, N, replace = TRUE)
+  interval <- c(qnorm(0.025, mean(s), sd(s)/sqrt(N)), qnorm(0.975, mean(s), sd(s)/sqrt(N)))
+  between(mu, interval[1], interval[2])
+})
+
+# Calculate the proportion of times the simulation produced values within the 95% confidence interval. Print this value to the console.
+mean(res)
+```
+
+<br/>
+
+## **Sampling from the t-Distribution**
+N=15 is not that big. We know that heights are normally distributed, so the t-distribution should apply. Repeat the previous Monte Carlo simulation using the t-distribution instead of using the normal distribution to construct the confidence intervals.
+
+What are the proportion of 95% confidence intervals that span the actual mean height now?
+
+Instructions
+
+- Use the ```replicate``` function to carry out the simulation. Specify the number of times you want the code to run and, within brackets, the three lines of code that should run.
+- First use the ```sample``` function to randomly sample ```N``` values from ```x```.
+- Second, create a vector called ```interval``` that calculates the 95% confidence interval for the sample. Remember to use the ```qt``` function this time to generate the confidence interval.
+- Third, use the ```between``` function to determine if the population mean ```mu``` is contained between the confidence intervals.
+- Save the results of the Monte Carlo function to a vector called ```res```.
+- Use the ```mean``` function to determine the proportion of hits in ```res```.
+
+```{r, include=TRUE}
+# The vector of filtered heights 'x' has already been loaded for you. Calculate the mean.
+mu <- mean(x)
+
+# Use the same sampling parameters as in the previous exercise.
+set.seed(1)
+N <- 15
+B <- 10000
+
+# Generate a logical vector 'res' that contains the results of the simulations using the t-distribution
+res <- replicate(B, {
+  s <- sample(x, N, replace = TRUE)
+  interval <- c(mean(s) - qt(0.975, N - 1) * sd(s) / sqrt(N), mean(s) + qt(0.975, N - 1) * sd(s) / sqrt(N))
+  between(mu, interval[1], interval[2])
+})
+
+# Calculate the proportion of times the simulation produced values within the 95% confidence interval. Print this value to the console.
+mean(res)
+```
+
+<br/>
+
+## **Why the t-Distribution?**
+Why did the t-distribution confidence intervals work so much better?
+
+Possible Answers
+
+- The t-distribution takes the variability into account and generates larger confidence intervals. [X]
+- Because the t-distribution shifts the intervals in the direction towards the actual mean.
+- This was just a chance occurrence. If we run it again, the CLT will work better.
+- The t-distribution is always a better approximation than the normal distribution.

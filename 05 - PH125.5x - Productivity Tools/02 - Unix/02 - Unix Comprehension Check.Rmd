@@ -1,0 +1,93 @@
+---
+title: "02 - Unix Comprehension Check"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **Unix**
+
+### **Working Directory**
+
+It is important to know which directory, or folder, you’re in when you are working from the command line in Unix. Which line of code will tell you the current working directory?
+
+- ```cd```
+- ```pwd``` [X]
+- ```rm```
+- ```echo```
+
+<br/>
+
+### **Previously Executed Code**
+
+You can’t use your computer’s mouse in a terminal. How can you see a line of code that you executed previously?
+
+- Type ```pwd```
+- Type ```echo```
+- Use the up arrow [X]
+- Press the enter key
+
+<br/>
+
+### **pwd Output**
+
+Assume a student types ```pwd``` and gets the following output printed to the screen: ```/Users/student/Documents```.
+
+Then, the student enters the following commands in sequence:
+
+```
+mkdir projects
+
+cd projects
+```
+
+What will be printed to the screen if the student types ```pwd``` after executing the two lines of code shown above?
+
+- ```/Users/student/Documents```
+- ```/Users/student/Documents/projects``` [X]
+- ```/Users/student```
+- ```cd: projects: No such file or directory```
+
+<br/>
+
+### **Moving Files 1**
+
+The following is the full path to a your homework assignment file called "assignment.txt": ```/Users/student/Documents/projects/homeworks/assignment.txt```.
+
+Which line of code will allow you to move the assignment.txt file from the “homeworks” directory into the parent directory “projects”?
+
+- ```mv assignment.txt```
+- ```mv assignment.txt .```
+- ```mv assignment.txt .. ``` [X]
+- ```mv assignment.txt /projects```
+
+<br/>
+
+### **Moving Files 2**
+
+You want to move a file called ```assignment.txt``` file into your ```projects``` directory. However, there is already a file called "assignment.txt" in the ```projects``` directory.
+
+What happens when you execute the “move” (```mv```) command to move the file into the new directory?
+
+- The moved "assignment.txt" file replaces the old "assignment.txt" file that was in the "projects" directory with no warning. [X]
+- An error message warns you that you are about to overwrite an existing file and asks if you want to proceed.
+- An error message tells you that a file already exists with that name and asks you to rename the new file. incorrect
+- The moved “assignment.txt” file is automatically renamed “assignment.txt (copy)” after it is moved into the “projects” directory.
+
+<br/>
+
+### **Unix Commands**
+
+Which of the following statements does NOT correctly describe the utility of a command in Unix?
+
+- The ```q``` key exits the viewer when you use ```less``` to view a file. incorrect
+- The command ```ls``` lists files in the current directory.
+- The command ```mkdir``` makes a new directory and moves into it. [X]
+- The ```mv``` command can move a file and change the name of a file.

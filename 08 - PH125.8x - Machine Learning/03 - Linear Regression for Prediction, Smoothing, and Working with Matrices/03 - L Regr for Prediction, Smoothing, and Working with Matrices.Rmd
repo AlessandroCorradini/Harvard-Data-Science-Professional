@@ -1,0 +1,493 @@
+---
+title: "03 - Linear Regression for Prediction, Smoothing, and Working with Matrices Comprehension Check"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **Linear Regression**
+### **Question 1**
+
+Create a data set using the following code:
+
+```{r, include=TRUE}
+set.seed(1)
+n <- 100
+Sigma <- 9*matrix(c(1.0, 0.5, 0.5, 1.0), 2, 2)
+dat <- MASS::mvrnorm(n = 100, c(69, 69), Sigma) %>%
+	data.frame() %>% setNames(c("x", "y"))
+``` 
+
+
+Use the ```caret``` package to partition the dataset into test and training sets of equal size. Train a linear model and calculate the RMSE. Repeat this exercise 100 times and report the mean and standard deviation of the RMSEs. (Hint: You can use the code shown in a previous course inside a call to ```replicate``` using a seed of 1.
+
+```{r, include=TRUE}
+library(caret)	
+set.seed(1)
+rmse <- replicate(100, {
+	test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+	train_set <- dat %>% slice(-test_index)
+	test_set <- dat %>% slice(test_index)
+	fit <- lm(y ~ x, data = train_set)
+ 	y_hat <- predict(fit, newdata = test_set)
+	sqrt(mean((y_hat-test_set$y)^2))
+})
+
+mean(rmse)
+sd(rmse)
+```	
+
+- Mean: 2.488661
+- SD: 0.1243952
+
+<br/>
+
+### **Question 2**
+Now we will repeat the above but using larger datasets. Repeat the previous exercise but for datasets with ```n <- c(100, 500, 1000, 5000, 10000)```. Save the average and standard deviation of RMSE from the 100 repetitions using a seed of 1. Hint: use the sapply or map functions.
+
+```{r, include=TRUE} 
+set.seed(1)
+n <- c(100, 500, 1000, 5000, 10000)
+res <- sapply(n, function(n){
+	Sigma <- 9*matrix(c(1.0, 0.5, 0.5, 1.0), 2, 2)
+	dat <- MASS::mvrnorm(n, c(69, 69), Sigma) %>%
+		data.frame() %>% setNames(c("x", "y"))
+	rmse <- replicate(100, {
+		test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+		train_set <- dat %>% slice(-test_index)
+		test_set <- dat %>% slice(test_index)
+		fit <- lm(y ~ x, data = train_set)
+		y_hat <- predict(fit, newdata = test_set)
+		sqrt(mean((y_hat-test_set$y)^2))
+	})
+	c(avg = mean(rmse), sd = sd(rmse))
+})
+
+res
+```
+
+- Mean, 100: 2.497754
+- SD, 100: 0.1180821
+- Mean, 500:2.720951
+- SD, 500:0.08002108
+- Mean, 1000:2.555545
+- SD, 1000: 0.04560258
+- Mean, 5000: 2.624828
+- SD, 5000: 0.02309673
+- Mean, 10000: 2.618442
+- SD, 10000: 0.01689205
+
+<br/>
+
+### **Question 3**
+
+What happens to the RMSE as the size of the dataset becomes larger?
+
+- On average, the RMSE does not change much as ```n``` gets larger, but the variability of the RMSE decreases. [X]
+- Because of the law of large numbers the RMSE decreases; more data means more precise estimates.
+- ```n = 10000``` is not sufficiently large. To see a decrease in the RMSE we would need to make it larger.
+- The RMSE is not a random variable.
+
+<br/>
+
+### **Question 4**
+
+Now repeat the exercise from Q1, this time making the correlation between ```x``` and ```y``` larger, as in the following code:
+
+```{r, include=TRUE}
+set.seed(1)
+n <- 100
+Sigma <- 9*matrix(c(1.0, 0.95, 0.95, 1.0), 2, 2)
+dat <- MASS::mvrnorm(n = 100, c(69, 69), Sigma) %>%
+	data.frame() %>% setNames(c("x", "y"))
+```
+
+Note what happens to RMSE - set the seed to 1 as before.
+
+```{r, include=TRUE}
+set.seed(1)
+rmse <- replicate(100, {
+	test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+	train_set <- dat %>% slice(-test_index)
+	test_set <- dat %>% slice(test_index)
+	fit <- lm(y ~ x, data = train_set)
+ 	y_hat <- predict(fit, newdata = test_set)
+	sqrt(mean((y_hat-test_set$y)^2))
+})
+
+mean(rmse)
+sd(rmse)
+```
+
+- Mean: 0.9099808
+- SD:0.06244347
+
+<br/>
+
+### **Question 5**
+
+Which of the following best explains why the RMSE in question 4 is so much lower than the RMSE in question 1?
+
+- It is just luck. If we do it again, it will be larger.
+- The central limit theorem tells us that the RMSE is normal.
+- When we increase the correlation between x and y, x has more predictive power and thus provides a better estimate of y. [X]
+- These are both examples of regression so the RMSE has to be the same.
+
+<br/>
+
+### **Question 6**
+
+Create a data set using the following code.
+
+```{r, include=TRUE}
+set.seed(1)
+n <- 1000
+Sigma <- matrix(c(1.0, 0.75, 0.75, 0.75, 1.0, 0.25, 0.75, 0.25, 1.0), 3, 3)
+dat <- MASS::mvrnorm(n = 100, c(0, 0, 0), Sigma) %>%
+	data.frame() %>% setNames(c("y", "x_1", "x_2"))
+```
+
+Note that ```y``` is correlated with both ```x_1``` and ```x_2``` but the two predictors are independent of each other, as seen by ```cor(dat)```.
+
+Use the ```caret``` package to partition into a test and training set of equal size. Compare the RMSE when using just ```x_1```, just ```x_2``` and both ```x_1``` and ```x_2```. Train a linear model for each.
+
+Which of the three models performs the best (has the lowest RMSE)?
+
+
+```{r, include=TRUE}
+set.seed(1)
+test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+train_set <- dat %>% slice(-test_index)
+test_set <- dat %>% slice(test_index)
+
+fit <- lm(y ~ x_1, data = train_set)
+y_hat <- predict(fit, newdata = test_set)
+sqrt(mean((y_hat-test_set$y)^2))
+
+fit <- lm(y ~ x_2, data = train_set)
+y_hat <- predict(fit, newdata = test_set)
+sqrt(mean((y_hat-test_set$y)^2))
+
+fit <- lm(y ~ x_1 + x_2, data = train_set)
+y_hat <- predict(fit, newdata = test_set)
+sqrt(mean((y_hat-test_set$y)^2))
+``` 
+
+- x_1
+- x_2
+- x_1 and x_2 [X]
+
+<br/>
+
+### **Question 7**
+
+Report the lowest RMSE of the three models tested in Q6.
+
+- Lowest: 0.3070962
+
+<br/>
+
+### **Question 8**
+
+Repeat the exercise from q6 but now create an example in which x_1 and x_2 are highly correlated.
+
+```
+set.seed(1)
+n <- 1000
+Sigma <- matrix(c(1.0, 0.75, 0.75, 0.75, 1.0, 0.95, 0.75, 0.95, 1.0), 3, 3)
+dat <- MASS::mvrnorm(n = 100, c(0, 0, 0), Sigma) %>%
+	data.frame() %>% setNames(c("y", "x_1", "x_2"))
+
+```
+Use the caret package to partition into a test and training set of equal size. Compare the RMSE when using just x_1, just x_2, and both x_1 and x_2.
+
+Compare the results from q6 and q8. What can you conclude?
+
+```{r, include=TRUE}
+set.seed(1)
+test_index <- createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+train_set <- dat %>% slice(-test_index)
+test_set <- dat %>% slice(test_index)
+
+fit <- lm(y ~ x_1, data = train_set)
+y_hat <- predict(fit, newdata = test_set)
+sqrt(mean((y_hat-test_set$y)^2))
+
+fit <- lm(y ~ x_2, data = train_set)
+y_hat <- predict(fit, newdata = test_set)
+sqrt(mean((y_hat-test_set$y)^2))
+
+fit <- lm(y ~ x_1 + x_2, data = train_set)
+y_hat <- predict(fit, newdata = test_set)
+sqrt(mean((y_hat-test_set$y)^2))
+```
+
+- Unless we include all predictors we have no predictive power.
+- Adding extra predictors improves RMSE regardless of whether the added predictors are correlated with other predictors or not.
+- Adding extra predictors results in over fitting.
+- Adding extra predictors can improve RMSE substantially, but not when the added predictors are highly correlated with other predictors. [X]
+
+<br/>
+
+## **Logistic Regression**
+### **Question 1**
+
+Define a dataset using the following code:
+
+```{r, include=TRUE}
+set.seed(2)
+make_data <- function(n = 1000, p = 0.5, 
+				mu_0 = 0, mu_1 = 2, 
+				sigma_0 = 1,  sigma_1 = 1){
+
+y <- rbinom(n, 1, p)
+f_0 <- rnorm(n, mu_0, sigma_0)
+f_1 <- rnorm(n, mu_1, sigma_1)
+x <- ifelse(y == 1, f_1, f_0)
+  
+test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+
+list(train = data.frame(x = x, y = as.factor(y)) %>% slice(-test_index),
+	test = data.frame(x = x, y = as.factor(y)) %>% slice(test_index))
+}
+dat <- make_data()
+```
+
+Note that we have defined a variable 
+```x``` that is predictive of a binary outcome ```y```: 
+```dat$train %>% ggplot(aes(x, color = y)) + geom_density()```.
+
+Generate 25 different datasets changing the difference between the two classes using ```delta <- seq(0, 3, len=25)``` and plot accuracy vs ```mu_1```.
+
+Which is the correct plot?
+
+```{r, include=TRUE}
+set.seed(1)
+delta <- seq(0, 3, len = 25)
+res <- sapply(delta, function(d){
+	dat <- make_data(mu_1 = d)
+	fit_glm <- dat$train %>% glm(y ~ x, family = "binomial", data = .)
+	y_hat_glm <- ifelse(predict(fit_glm, dat$test) > 0.5, 1, 0) %>% factor(levels = c(0, 1))
+	mean(y_hat_glm == dat$test$y)
+})
+qplot(delta, res)
+``` 
+
+<br/>
+
+## **Smoothing**
+### **Question 1**
+
+In the Wrangling course of this series, PH125.6x, we used the following code to obtain mortality counts for Puerto Rico for 2015-2018:
+
+```{r, include=TRUE}
+library(tidyverse)
+library(lubridate)
+library(purrr)
+library(pdftools)
+    
+fn <- system.file("extdata", "RD-Mortality-Report_2015-18-180531.pdf", package="dslabs")
+dat <- map_df(str_split(pdf_text(fn), "\n"), function(s){
+	s <- str_trim(s)
+	header_index <- str_which(s, "2015")[1]
+	tmp <- str_split(s[header_index], "\\s+", simplify = TRUE)
+	month <- tmp[1]
+	header <- tmp[-1]
+	tail_index  <- str_which(s, "Total")
+	n <- str_count(s, "\\d+")
+	out <- c(1:header_index, which(n==1), which(n>=28), tail_index:length(s))
+	s[-out] %>%
+		str_remove_all("[^\\d\\s]") %>%
+		str_trim() %>%
+		str_split_fixed("\\s+", n = 6) %>%
+		.[,1:5] %>%
+		as_data_frame() %>% 
+		setNames(c("day", header)) %>%
+		mutate(month = month,
+			day = as.numeric(day)) %>%
+		gather(year, deaths, -c(day, month)) %>%
+		mutate(deaths = as.numeric(deaths))
+}) %>%
+	mutate(month = recode(month, "JAN" = 1, "FEB" = 2, "MAR" = 3, "APR" = 4, "MAY" = 5, "JUN" = 6, 
+                          "JUL" = 7, "AGO" = 8, "SEP" = 9, "OCT" = 10, "NOV" = 11, "DEC" = 12)) %>%
+	mutate(date = make_date(year, month, day)) %>%
+	filter(date <= "2018-05-01")
+```
+
+Use the loess function to obtain a smooth estimate of the expected number of deaths as a function of date. Plot this resulting smooth function. Make the span about two months long.
+
+Which of the following plots is correct?
+
+```{r, include=TRUE}
+span <- 60 / as.numeric(diff(range(dat$date)))
+fit <- dat %>% mutate(x = as.numeric(date)) %>% loess(deaths ~ x, data = ., span = span, degree = 1)
+dat %>% mutate(smooth = predict(fit, as.numeric(date))) %>%
+	ggplot() +
+	geom_point(aes(date, deaths)) +
+	geom_line(aes(date, smooth), lwd = 2, col = 2)
+```
+
+<br/>
+
+### **Question 2**
+
+Work with the same data as in Q1 to plot smooth estimates against day of the year, all on the same plot, but with different colors for each year.
+
+Which code produces the desired plot?
+
+```{r, include=TRUE}
+span <- 60 / as.numeric(diff(range(dat$date)))
+fit <- dat %>% mutate(x = as.numeric(date)) %>% loess(deaths ~ x, data = ., span = span, degree = 1)
+dat %>% 
+	mutate(smooth = predict(fit, as.numeric(date)), day = yday(date), year = as.character(year(date))) %>%
+	ggplot(aes(day, smooth, col = year)) +
+	geom_line(lwd = 2)
+```
+```
+dat %>% 
+	mutate(smooth = predict(fit), day = yday(date), year = as.character(year(date))) %>%
+	ggplot(aes(day, smooth, col = year)) +
+	geom_line(lwd = 2)
+```
+```
+dat %>% 
+	mutate(smooth = predict(fit, as.numeric(date)), day = mday(date), year = as.character(year(date))) %>%
+	ggplot(aes(day, smooth, col = year)) +
+	geom_line(lwd = 2)
+```
+```
+dat %>% 
+	mutate(smooth = predict(fit, as.numeric(date)), day = yday(date), year = as.character(year(date))) %>%
+	ggplot(aes(day, smooth)) +
+  	geom_line(lwd = 2)
+```
+```
+dat %>% 
+	mutate(smooth = predict(fit, as.numeric(date)), day = yday(date), year = as.character(year(date))) %>%
+	ggplot(aes(day, smooth, col = year)) +
+	geom_line(lwd = 2) [X]
+```
+
+<br/>
+
+### **Question 3**
+
+Suppose we want to predict 2s and 7s in the ```mnist_27``` dataset with just the second covariate. Can we do this? On first inspection it appears the data does not have much predictive power.
+
+In fact, if we fit a regular logistic regression the coefficient for ```x_2``` is not significant!
+
+This can be seen using this code:
+
+```{r, include=TRUE}
+library(broom)
+library(dslabs)
+data(mnist_27)
+mnist_27$train %>% glm(y ~ x_2, family = "binomial", data = .) %>% tidy()
+```
+
+Plotting a scatterplot here is not useful since y is binary:
+
+```{r, include=TRUE}
+qplot(x_2, y, data = mnist_27$train)
+```
+
+Fit a loess line to the data above and plot the results. What do you observe?
+
+- There is no predictive power and the conditional probability is linear.
+- There is no predictive power and the conditional probability is non-linear.
+- There is predictive power and the conditional probability is linear.
+- There is predictive power and the conditional probability is non-linear. [X}
+
+<br/>
+
+## **Working with Matrices**
+### **Question 1**
+
+Which line of code correctly creates a 100 by 10 matrix of randomly generated normal numbers and assigns it to ```x```?
+
+- ```x <- matrix(rnorm(1000), 100, 100)```
+- ```x <- matrix(rnorm(100*10), 100, 10)``` [X]
+- ```x <- matrix(rnorm(100*10), 10, 10)```
+- ```x <- matrix(rnorm(100*10), 10, 100)```
+
+<br/>
+
+### **Question 2**
+
+Write the line of code that would give you the specified information about the matrix ```x``` that you generated in q1. Do not include any spaces in your line of code.
+
+Dimension of ```x```.
+
+```dim(x)```
+
+Number of rows of ```x```.
+
+```nrow(x)```
+
+Number of columns of ```x```.
+
+```ncol(x)```
+
+<br/>
+
+### **Question 3**
+
+Which of the following lines of code would add the scalar 1 to row 1, the scalar 2 to row 2, and so on, for the matrix ```x```?
+
+- ```x <- x + seq(nrow(x)) ``` [X]
+- ```x <- 1:nrow(x)```
+- ```x <- sweep(x, 2, 1:nrow(x),"+")```
+- ```x <- sweep(x, 1, 1:nrow(x),"+")``` [X]
+
+<br/>
+
+### **Question 4**
+
+Which of the following lines of code would add the scalar 1 to column 1, the scalar 2 to column 2, and so on, for the matrix ```x?```
+
+- ```x <- 1:ncol(x)```
+- ```x <- 1:col(x)```
+- ```x <- sweep(x, 2, 1:ncol(x), FUN = "+") ``` [X]
+- ```x <- -x```
+
+<br/>
+
+### **Question 5**
+
+Which code correctly computes the average of each row of ```x```?
+
+- mean(x)```
+- rowMedians(x)```
+- sapply(x,mean)```
+- rowSums(x)```
+- rowMeans(x)``` [X]
+
+ Which code correctly computes the average of each column of ```x```?
+ 
+- ```mean(x)```
+- ```sapply(x,mean)```
+- ```colMeans(x)``` [X]
+- ```colMedians(x)```
+- ```colSums(x)```
+
+<br/>
+
+### **Question 6**
+
+For each digit in the mnist training data, compute the proportion of pixels that are in the grey area, defined as values between 50 and 205. (To visualize this, you can make a boxplot by digit class.)
+
+What proportion of pixels are in the grey area overall, defined as values between 50 and 205?
+
+```{r, include=TRUE}
+mnist <- read_mnist()
+y <- rowMeans(mnist$train$images>50 & mnist$train$images<205)
+qplot(as.factor(mnist$train$labels), y, geom = "boxplot")
+mean(y)
+```

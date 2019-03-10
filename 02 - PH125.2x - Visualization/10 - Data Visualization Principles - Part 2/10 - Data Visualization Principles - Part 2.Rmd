@@ -1,0 +1,99 @@
+---
+title: "Assessment 10 - Data Visualization Principles Part 2"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **Customizing plots - watch and learn**
+To make the plot on the right in the exercise from the last set of assessments, we had to reorder the levels of the states' variables.
+
+**Instructions**
+
+- Redefine the ```state``` object so that the levels are re-ordered by rate.
+- Print the new object ```state``` and its levels so you can see that the vector is now re-ordered by the levels.
+
+```{r, include=TRUE}
+state <- reorder(state, rate)
+print(state)
+levels(state)
+```
+
+<br/>
+
+## **Customizing plots - redefining**
+Now we are going to customize this plot a little more by creating a rate variable and reordering by that variable instead.
+
+**Instructions**
+
+- Add a single line of code to the definition of the ```dat``` table that uses ```mutate``` to reorder the states by the rate variable.
+- The sample code provided will then create a bar plot using the newly defined ```dat```.
+
+```{r,include=TRUE}
+dat <- us_contagious_diseases %>% filter(year == 1967 & disease=="Measles" & count>0 & !is.na(population)) %>%
+ mutate(rate = count / population * 10000 * 52 / weeks_reporting) %>%
+ mutate(state = reorder(state, rate))
+dat %>% ggplot(aes(state, rate)) +
+ geom_bar(stat="identity") +
+ coord_flip()
+```
+
+<br/>
+
+## **Showing the data and customizing plots**
+Say we are interested in comparing gun homicide rates across regions of the US. We see this plot:
+
+```{r, include=TRUE}
+library(dplyr)
+library(ggplot2)
+library(dslabs)
+data("murders")
+murders %>% mutate(rate = total/population*100000) %>%
+  group_by(region) %>%
+  summarize(avg = mean(rate)) %>%
+  mutate(region = factor(region)) %>%
+  ggplot(aes(region, avg)) +
+  geom_bar(stat="identity") +
+  ylab("Murder Rate Average")
+```
+
+and decide to move to a state in the western region. What is the main problem with this interpretaion?
+
+
+**Instructions**
+
+Possible Answers
+
+- The categories are ordered alphabetically.
+- The graph does not show standard errors.
+I- t does not show all the data. We do not see the variability within a region and it's possible that the safest states are not in the West. [X]
+- The Northeast has the lowest average.
+
+
+## **Making a box plot**
+To further investigate whether moving to the western region is a wise decision, let's make a box plot of murder rates by region, showing all points.
+
+**Instructions**
+
+- Make a box plot of the murder rates by region.
+- Order the regions by their median murder rate.
+- Show all of the points on the box plot.
+
+```{r, include=TRUE}
+library(dplyr)
+library(ggplot2)
+library(dslabs)
+data("murders")
+murders %>% mutate(rate = total/population*100000) %>%
+  mutate(region=reorder(region, rate, FUN=median)) %>%
+  ggplot(aes(region, rate)) +
+  geom_boxplot() +
+  geom_point()
+```  

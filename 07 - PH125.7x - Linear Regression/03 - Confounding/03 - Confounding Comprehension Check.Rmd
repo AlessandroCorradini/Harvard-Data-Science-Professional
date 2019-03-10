@@ -1,0 +1,103 @@
+---
+title: "03 - Confounding Comprehension Check"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **Correlation is Not Causation: Spurious Correlation**
+### **Question 1**
+In the video, we ran one million tests of correlation for two random variables, X and Y.
+
+How many of these correlations would you expect to have a significant p-value (p>0.05), just by chance?
+
+- 5,000
+- 50,000 [X]
+- 100,000
+- It’s impossible to know
+
+<br/>
+
+### **Question 2**
+
+Which of the following are examples of p-hacking?
+
+- Looking for associations between an outcome and several exposures and only reporting the one that is significant. [X]
+- Trying several different models and selecting the one that yields the smallest p-value. [X]
+- Repeating an experiment multiple times and only reporting the one with the smallest p-value. [X]
+- Using a Monte Carlo simulations in an analysis.
+
+<br/>
+
+## **Correlation is Not Causation: Outliers**
+### **Question 1**
+
+The Spearman correlation coefficient is robust to outliers because:
+
+- It drops outliers before calculating correlation.
+- It is the correlation of standardized values.
+- It calculates correlation between ranks, not values. [X]
+
+<br/>
+
+## **Correlation is Not Causation: Reversing Cause and Effect**
+### **Question 1**
+
+Which of the following may be examples of reversed cause and effect?
+
+- Past smokers who have quit smoking may be more likely to die from lung cancer. [X]
+- Tall fathers are more likely to have tall sons.
+- People with high blood pressure tend to have a healthier diet. [X]
+- Individuals in a low social status have a higher risk of schizophrenia. [X]
+
+<br/>
+
+## **Correlation is Not Causation: Confounderss**
+### **Question 1**
+
+What can you do to determine if you are misinterpreting results because of a confounder?
+
+
+- Nothing, if the p-value says the result is significant, then it is.
+- More closely examine the results by stratifying and plotting the data. [X]
+- Always assume that you are misinterpreting the results.
+- Use linear models to tease out a confounder.
+
+<br/>
+
+### **Question 2**
+
+Look again at the admissions data using ?admissions. What important characteristic of the table variables do you need to know to understand the calculations used in this video? Select the best answer.
+
+- The data is from 1973.
+- The columns “major” and “gender” are of class character, while “admitted” and “applicants” are numeric.
+- The data is from the “dslabs” package.
+-The column “admitted” is the percent of student admitted, while the column “applicants” is the total number of applicants. [X]
+
+<br/>
+
+### **Question 3**
+
+In the example in the video, major selectivity confounds the relationship between UC Berkley admission rates and gender because:
+
+- It was harder for women to be admitted to UC Berkeley.
+- Major selectivity is associated with both admission rates and with gender, as women tended to apply to more selective majors. [X]
+- Some majors are more selective than others
+- Major selectivity is not a confounder.
+
+<br/>
+
+## **Simpson's Paradox**
+### **Question 1**
+Admission rates at UC Berkeley are an example of Simpson’s Paradox because:
+
+- It appears that men have higher a higher admission rate than women, however, after we stratify by major, we see that on average women have a higher admission rate than men. [X]
+- It was a paradox that women were being admitted at a lower rate than men.
+- The relationship between admissions and gender is confounded by major selectivity.

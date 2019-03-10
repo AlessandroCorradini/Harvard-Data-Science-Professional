@@ -1,0 +1,158 @@
+---
+title: "05 - Advanced Unix Comprehension Check"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **Advanced Unix Arguments**
+### **Arguments**
+
+What will the command ```ls -lat``` produce?
+
+- A list of all file (names, sizes, and other information) arranged in chronological order with the most recently modified files at the top of the list. [X]
+- A list of visible files (names, sizes, and other information) arranged in chronological order with the oldest files at the top of the list.
+- A list of all files (names only) arranged in chronological order with the oldest files at the top of the list.
+- A list of visible files (names only) arranged in chronological order with the most recent files at the top of the list.
+
+<br/>
+
+### **Arguments 2**
+
+What happens when you remove a directory using the command ```rm -r```?
+
+- You cannot remove a directory using the ```rm``` command.
+- You permanently remove the entire directory, including all files and subdirectories. [X]
+- You move the entire directory to a trash folder, but it can be restored later.
+- You get a warning message asking if you want to proceed, then you delete the directory.
+
+<br/>
+
+## **Advanced Unix Getting Help and Pipes**
+### **Getting Help and Pipes**
+
+By default, the ```head``` command in Unix displays the first 10 lines of a specified file. You can change the number of lines using an argument that indicates the numeric value of the desired number of lines.
+
+Which of the following commands displays only the first 6 lines of a manual for the ```ls``` command?
+
+- ```man ls -6 | head```
+- ```head | man ls -6```
+- ```head -6 | man ls```
+- ```man ls | head -6``` [X]
+
+<br/>
+
+## **Advanced Unix Wildcards**
+### **Wildcards**
+
+You have a directory containing the following files.
+
+data1.csv, data2.txt, data3.txt, Data8.csv, data13.csv, data18.txt, Data22.txt, Data34.csv
+
+Which command will list only all of the .txt files that have “data” in their name? Remember that commands are case-sensitive.
+
+- ```ls data*```
+- ```ls data*.txt``` [X]
+- ```ls *.txt```
+- ```ls data?.txt```
+
+<br/>
+
+### **Wildcards 2**
+
+You have a directory containing the following files.
+
+data1.csv, data2.txt, data3.txt, Data8.csv, data13.csv, data18.txt, Data22.txt, Data34.csv
+
+Which command will remove every file that begins with “D”?
+
+- ```rm D*``` [X]
+- ```rm D*.txt```
+- ```ls D*```
+- ```ls D*.txt```
+
+<br/>
+
+### **Wildcards 3**
+
+Imagine you have multiple text files in the following directory: ```/Users/student/Documents/project```.
+
+You enter the following commands in sequence:
+
+```
+mkdir data
+mv *.txt data
+cd data
+```
+
+What will be printed to the screen if you enter the ls command after executing the three lines of code shown above?
+
+- ```/Users/student/Documents/project/data```
+- The file names that were moved from the “project” directory into the “data” directory. [X]
+- Nothing. You haven’t added anything to the new “data” directory yet.
+- The file names that remain in the “project” directory.
+
+<br/>
+
+## **Advanced Unix Environment Variables and Shells**
+### **Environment Variables and Shells**
+
+What does the command ```echo $HOME``` do?
+
+- Moves into to the home directory.
+- Makes the current directory the home directory.
+- Prints the path to the home directory. [X]
+- Prints “$HOME” to the screen.
+
+<br/>
+
+### **Environment Variables and Shells 2**
+
+Many systems operate using the Unix shell and command language, bash. Each time you start using bash, it executes the commands contained in a “dot” file. Your “dot” file may be called something like “.bash_profile” or “.bash_rc”.
+
+Which command will let you see your “dot” files?
+
+- ```ls -a ```[X]
+- ```ls bash*```
+- ```head *bash*```
+- ```ls -l```
+
+<br/>
+
+## **Advanced Unix Executables, Permissions, and File Types**
+### **Executables, Permissions, and File Types**
+
+Your colleague was editing his “dot” files when something went wrong. He first noticed there was an issue when he tried to execute the following line of code:
+
+```ls```
+
+He received the following error:
+
+```-bash: ls: command not found```
+
+What could have happened to cause this error?
+
+- He is trying to execute ```ls``` which is a bash command, but his system isn’t running bash as a shell.
+- The command ```ls``` doesn’t exist. He should be using the command ```ll```.
+- He forgot to specify a file name to be listed. The command ```ls *``` should work.
+- He changed the information contained in $PATH. Now the system cannot find the executable file for ```ls```. [X]
+
+<br/>
+
+### **Executables, Permissions, and File Types 2**
+
+The bash profile in your home directory contains information that the bash shell runs each time you use it. You can customize the information in your bash profile to tell your system to do different things. For example, you can make an “alias”, which acts like a keyboard shortcut.
+
+Which line of code, when added to your bash profile, will let you print “seetop” to view the name, size, and file type of the 10 most recently added visible files?
+
+- ```alias seetop=’ls -lt’```
+- ```alias seetop=’ls -lt | head’``` [X]
+- ```alias seetop=’ls -t | head’```
+- ```alias seetop=’head | ls -l’```

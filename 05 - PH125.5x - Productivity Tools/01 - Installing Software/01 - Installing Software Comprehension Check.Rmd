@@ -1,0 +1,69 @@
+---
+title: "01 - Installing Software Comprehension Check"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **RStudio**
+
+### **Installing R and RStudio**
+
+Which of the following statements about R and RStudio is true?
+
+- R is a programming language, whereas RStudio is a desktop environment. [X]
+- You can use RStudio without using R, but we recommend using R in this course.
+- When you download RStudio, it automatically downloads and installs R too.
+- You can only use R on Mac OS X and Linux. Windows users must use RStudio.
+
+<br/>
+
+### **Introduction to RStudio**
+
+Select the code that will NOT install the popular graphing and data manipulation packages ```ggplot2``` and ```dplyr``` in R.
+
+- ```install.packages(c("ggplot2","dplyr"))```
+- ```install.packages("tidyverse")```
+- ```install.packages(c("dplyr","ggplot2”)``` [X]
+- ```install.packages("ggplot2") install.packages("dplyr")```
+
+<br/>
+
+## **Introduction to Git and GitHub**
+### **Pull**
+
+What does the term "pull" mean in the context of using Git in RStudio?
+
+- Add local files to a remote GitHub repo.
+- Download changes from the remote repo to your local repository. [X]
+- Configure the RStudio environment to automatically connect to GitHub.
+- Save changes made in RStudio to the local repository on your computer.
+
+<br/>
+
+### **Push**
+
+What does the term “push” mean in the context of using Git in RStudio?
+
+- Upload changes made in your local repository to a remote repository. [X]
+- Download changes from the remote repo to the RStudio environment.
+- Configure the RStudio environment to automatically connect to GitHub.
+- Save changes made in RStudio to the local repository on your computer.
+
+<br/>
+
+### **Commit**
+
+What does the term “commit” mean in the context of using Git in RStudio?
+
+- Add local files to a remote GitHub repo. incorrect
+- Download changes from the remote repo to the RStudio environment.
+- Configure the RStudio environment to automatically connect to GitHub.
+- Save changes made in RStudio to the local repository on your computer. [X]

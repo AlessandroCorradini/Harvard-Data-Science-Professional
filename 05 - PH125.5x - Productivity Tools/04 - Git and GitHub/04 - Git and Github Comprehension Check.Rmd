@@ -1,0 +1,141 @@
+---
+title: "04 - Gith and GitHub"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **Git and GitHub**
+### **Git and GitHub Benefits**
+
+Which statement describes reasons why we recommend using git and Github when working on data analysis projects?
+
+- Git and Github facilitate fast, high-throughput analysis of large data sets.
+- Git and Github allow easy version control, collaboration, and resource sharing. [X]
+- Git and Github have graphical interfaces that make it easy to learn to code in R.
+- Git and Github is good for long-term storage of private data.
+
+<br/>
+
+## **Using Git at the Command Line**
+### **Cloning a Repo**
+
+Select the steps necessary to:
+
+1. create a directory called “project-clone”,
+
+2. clone the contents of a git repo at the following URL into that directory (https://github.com/user123/repo123.git), and
+
+3. list the contents of the cloned repo.
+
+```
+mkdir project-clone
+git add https://github.com/user123/repo123.git
+ls
+```
+
+``` 
+mkdir project-clone
+git clone https://github.com/user123/repo123.git
+ls
+```
+
+``` 
+mkdir project-clone
+cd project-clone
+git clone https://github.com/user123/repo123.git
+ls   [X]
+```
+
+
+```
+mkdir project-clone
+cd project-clone
+git clone https://github.com/user123/repo123.git
+less
+```
+
+<br/>
+
+### **Git Status**
+
+You have successfully cloned a Github repository onto your local system. The cloned repository contains a file called “heights.txt” that lists the heights of students in a class. One student was missing from the dataset, so you add that student’s height using the following command:
+
+```echo “165” >> heights.txt```
+
+Next you enter the command ```git status``` to check the status of the Github repository.
+
+What message is returned and what does it mean?
+
+- ```modified: heights.txt, no changes added to commit``` This message means that the heights.txt file was modified, but the changes have not been staged or committed to the local repository. [X]
+- ```modified: heights.txt, no changes added to commit``` This message means that the heights.txt file was modified and staged, but not yet committed.
+- ```1 file changed``` This message means that the heights.txt file was modified, staged, committed, and pushed to the upstream repository.
+- ```modified: heights.txt``` This message means that the heights.txt file was modified, staged, and committed.
+
+<br/>
+
+### **Modifying a File in an Upstream Repo**
+
+You cloned your own repository and modified a file within it on your local system. Next, you executed the following series of commands to include the modified file in the upstream repository, but it didn’t work. Here is the code you typed:
+
+```
+git add modified_file.txt
+git commit -m “minor changes to file” modified_file.txt
+git pull
+```
+
+What is preventing the modified file from being added to the upstream repository?
+
+- The wrong option is being used to add a descriptive message to the commit.
+- ```git push``` should be used instead of git pull. [X]
+- ```git commit``` should come before git add.
+- The ```git pull``` command line needs to include the file name.
+
+<br/>
+
+## **Creating a GitHub Repository**
+### **Readme File**
+
+You have a directory of scripts and data files on your computer that you want to share with collaborators using GitHub. You create a new repository on your GitHub account called “repo123” that has the following URL: https://github.com/user123/repo123.git.
+
+Which of the following sequences of commands will convert the directory on your computer to a Github directory and create and add a descriptive “read me” file to the new repository?
+
+```
+git init
+git add README.txt
+git commit -m "First commit. Adding README file."
+git remote add origin `https://github.com/user123/repo123.git`
+git push
+```
+
+```
+echo “A new repository with my scripts and data” > README.txt
+git init
+git add
+git commit -m "First commit. Adding README file."
+git remote add origin `https://github.com/user123/repo123.git`
+git push
+```
+```
+echo “A new repository with my scripts and data” > README.txt
+git init
+git add README.txt
+git commit -m "First commit. Adding README file."
+git remote add origin `https://github.com/user123/repo123.git`
+git pull
+```
+```
+echo “A new repository with my scripts and data” > README.txt
+git init
+git add README.txt
+git commit -m "First commit. Adding README file."
+git remote add origin `https://github.com/user123/repo123.git`
+git push [X]
+```

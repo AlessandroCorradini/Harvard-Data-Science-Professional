@@ -1,0 +1,34 @@
+---
+title: "04 - Dates, Times and Text Mining Comprehension Check"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **Dates and Times**
+### **Question 1**
+
+Which of the following is the standard ISO 8601 format for dates?
+
+- MM-DD-YY
+- YYYY-MM-DD [X]
+- YYYYMMDD
+- YY-MM-DD
+
+### **Question 2**
+Which of the following commands could convert this string into the correct date format?
+
+``` dates <- c("09-01-02", "01-12-07", "02-03-04") ```
+
+- ymd(dates)
+- mdy(dates)
+- dmy(dates)
+- It is impossible to know which format is correct without additional information. [X]
+

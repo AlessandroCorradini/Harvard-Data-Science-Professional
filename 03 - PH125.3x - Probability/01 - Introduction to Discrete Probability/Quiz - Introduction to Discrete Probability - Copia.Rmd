@@ -1,0 +1,50 @@
+---
+title: "Quiz - Introduction to Descrete probability"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **Probability of cyan**
+One ball will be drawn at random from a box containing: 3 cyan balls, 5 magenta balls, and 7 yellow balls.
+
+What is the probability that the ball will be cyan?
+
+```{r}
+3/15
+```  
+ 
+## **Probability of not cyan**
+One ball will be drawn at random from a box containing: 3 cyan balls, 5 magenta balls, and 7 yellow balls.
+
+What is the probability that the ball will not be cyan?
+
+```{r}
+12/15
+``` 
+ 
+## **Sampling without replacement**
+Instead of taking just one draw, consider taking two draws. You take the second draw without returning the first draw to the box. We call this sampling without replacement.
+
+What is the probability that the first draw is cyan and that the second draw is not cyan?
+
+```{r}
+3/15 * 12/14
+```
+
+## **Sampling with replacement**
+Now repeat the experiment, but this time, after taking the first draw and recording the color, return it back to the box and shake the box. We call this sampling with replacement.
+
+What is the probability that the first draw is cyan and that the second draw is not cyan?
+
+```{r}
+3/15 * 12/15
+```
+

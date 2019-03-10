@@ -1,0 +1,32 @@
+---
+title: "01 - Introduction to Machine Learning Comprehension Check"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **Introduction to Machine Learning**
+### **Question 1**
+
+"Turbochamp" was one of the first algorithms written by famed British computer scientist, mathematician and crypto-analyst Alan Turing in the late 1940s. The artificial intelligence program was based on programmable rules derived from theory or first principles and could 'think' two moves ahead.
+
+True or False: A key feature of machine learning is that the algorithms are built on data.
+
+- True [X]
+- False
+
+<br/>
+
+### **Question 2**
+
+True or False: In machine learning, we build algorithms that take feature values (X) and train a model using known outcomes (Y) that is then used to predict outcomes when presented with features without known outcomes.
+
+- True [X]
+- False

@@ -1,0 +1,206 @@
+---
+title: "01 - Data Import Comprehension Check"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+## **Importing Spreadsheets**
+### **Question 1**
+
+Which of the following is NOT part of the data wranging process?
+
+- Importing data into R
+- Formatting dates/times
+- Checking correlations between your variables [X]
+- Tidying data
+
+### **Question 2**
+
+Which files could be opened in a basic text editor?
+Select ALL that apply.
+
+- data.txt [X]
+- data.csv [X]
+- data.xlsx
+- data.tsv [X]
+
+### **Question 3**
+1/1 point (graded)
+You want to analyze a file containing race finish times for a recent marathon. You open the file in a basic text editor and see lines that look like the following:
+
+initials,state,age,time
+vib,MA,61,6:01
+adc,TX,45,5:45
+kme,CT,50,4:19
+
+What type of file is this?
+
+- A comma-delimited file without a header
+- A tab-delimited file with a header
+- A white space-delimited file without a header
+- A comma-delimited file with a header [X]
+
+<br/>
+
+## **Paths and the Working Directory**
+### **Question 1**
+
+Assume the following is the full path to the directory that a student wants to use as their working directory in R: "/Users/student/Documents/projects/"
+
+Which of the following lines of code CANNOT set the working directory to the desired "projects" directory?
+
+- ```setwd("~/Documents/projects/")```
+- ```setwd("/Users/student/Documents/projects/")```
+- ```setwd(/Users/student/Documents/projects/)``` [X]
+- ```dir <- "/Users/student/Documents/projects" setwd(dir)```
+
+<br/>
+
+### **Question 2**
+
+We want to copy the "murders.csv" file from the dslabs package into an existing folder "data", which is located in our HarvardX-Wrangling projects folder. We first enter the code below into our RStudio console.
+
+```
+> getwd()
+[1] "C:/Users/UNIVERSITY/Documents/Analyses/HarvardX-Wrangling"
+> filename <- "murders.csv"
+> path <- system.file("extdata", package = "dslabs")
+```
+
+Which of the following commands would NOT successfully copy “murders.csv” into the folder “data”?
+
+- ```file.copy(file.path(path, "murders.csv"), getwd()) ``` [X]
+- ```setwd("data") file.copy(file.path(path, filename), getwd())```
+- ```file.copy(file.path(path, "murders.csv"), file.path(getwd(), "data"))```
+- ```file.location <- file.path(system.file("extdata", package = "dslabs"), "murders.csv") file.destination <- file.path(getwd(), "data") file.copy(file.location, file.destination)```
+
+<br/>
+
+## **The readr and readxl Packages**
+### **Question 1**
+
+You are not sure whether the murders.csv file has a header row. How could you check this?
+Select ALL that apply.
+
+- Open the file in a basic text editor. [X]
+- In the RStudio “Files” pane, click on your file, then select “View File”. [X]
+- Use the command read_lines (remembering to specify the number of rows with the n_max argument). [X]
+
+<br/>
+
+### **Question 2**
+
+What is one difference between ```read_excel``` and ```read_xlsx```?
+
+- Read_excel also reads meta-data from the excel file, such as sheet names, while read_xlsx only reads the first sheet in a file.
+- Read_excel reads both .xls and .xlsx files by detecting the file format from its extension, while read_xlsx only reads .xlsx files. [X]
+- Read_excel is part of the readr package, while read_xlsx is part of the readxl package and has more options.
+- Read_xlsx has been replaced by read_excel in a recent readxl package update.
+
+<br/>
+
+### **Question 3**
+
+You have a file called “times.txt” that contains race finish times for a marathon. The first four lines of the file look like this:
+
+```
+initials,state,age,time
+vib,MA,61,6:01
+adc,TX,45,5:45
+kme,CT,50,4:19
+```
+
+Which line of code will NOT produce a tibble with column names “initials”, “state”, “age”, and “time”?
+
+
+- ```race_times <- read_csv("times.txt")``` 
+- ```race_times <- read.csv("times.txt")``` [X]
+- ```race_times <- read_csv("times.txt", col_names = TRUE)```
+- ```race_times <- read_delim("times.txt", delim = “,”)```
+
+<br/>
+
+### **Question 4**
+
+You also have access to marathon finish times in the form of an Excel document named “times.xlsx”. In the Excel document, different sheets contain race information for different years. The first sheet is named “2015”, the second is named “2016”, and the third is named “2017”.
+
+Which line of code will NOT import the data contained in the “2016” tab of this Excel sheet?
+
+
+- ```times_2016 <- read_excel("times.xlsx", sheet = 2)```
+- ```times_2016 <- read_xlsx("times.xlsx", sheet = “2”)``` [X]
+- ```times_2016 <- read_excel("times.xlsx", sheet = "2016")```
+- ```times_2016 <- read_xlsx("times.xlsx", sheet = 2)```
+
+<br/>
+
+## **Importing Data Using R-base Functions**
+### **Question 1**
+
+You have a comma-separated values file that contains the initials, home states, ages, and race finish times for marathon runners. The runners’ initials contain three characters for the runners’ first, middle, and last names (for example, “KME”).
+
+You read in the file using the following code.
+
+```
+race_times <- read.csv(“times.csv”)
+```
+
+What is the data type of the initials in the object ```race_times```?
+
+- integers
+- characters
+- factors [X]
+- logical
+
+<br/>
+
+### **Question 2**
+
+Which of the following is NOT a real difference between the readr import functions and the base R import functions?
+
+- The import functions in the readr package all start as ```read_```, while the import functions for base R all start with read. 
+- Base R import functions automatically convert character columns to factors.
+- The base R import functions can read .csv files, but cannot files with other delimiters, such as .tsv files, or fixed-width files. [X]
+- Base R functions import data as a data frame, while readr functions import data as a tibble.
+
+<br/>
+
+### **Question 3**
+
+You read in a file containing runner information and marathon finish times using the following code.
+
+```race_times <- read.csv(“times.csv”, stringsAsFactors = F)```
+
+What is the class of the object race_times?
+
+
+- data frame [X]
+- tibble 
+- matrix
+- vector
+
+<br/>
+
+## **Downloading Files from the Internet**
+### **Question 1**
+
+Select the answer choice that summarizes all of the actions that the following lines of code can perform. Please note that the url below is an example and does not lead to data.
+
+```
+url <- "https://raw.githubusercontent.com/MyUserName/MyProject/master/MyData.csv "
+dat <- read_csv(url)
+download.file(url, "MyData.csv")
+```
+
+- Create a tibble in R called ```dat``` that contains the information contained in the csv file stored on Github and save that tibble to the working directory.
+- Create a matrix in R called ```dat``` that contains the information contained in the csv file stored on Github. Download the csv file to the working directory and name the downloaded file “MyData.csv”.
+- Create a tibble in R called ```dat``` that contains the information contained in the csv file stored on Github. Download the csv file to the working directory and randomly assign it a temporary name that is very likely to be unique.
+- Create a tibble in R called ```dat``` that contains the information contained in the csv file stored on Github. Download the csv file to the working directory and name the downloaded file “MyData.csv”. [X]
