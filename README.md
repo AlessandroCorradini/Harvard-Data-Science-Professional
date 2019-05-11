@@ -7,7 +7,8 @@
 
 The entire program is taught by the famous Prof. of Biostatistics Rafael Irizarry from Harvard University through [edX platform](https://www.edx.org).
 
-This course cover:
+This Program Covers:
+
 - Fundamental R programming skills.
 - Statistical concepts such as probability, inference, and modeling and how to apply them in practice.
 - Gain experience with the tidyverse, including data visualization with ggplot2 and data wrangling with dplyr.
