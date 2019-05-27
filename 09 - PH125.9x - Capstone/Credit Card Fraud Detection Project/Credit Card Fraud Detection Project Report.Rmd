@@ -1,0 +1,1848 @@
+---
+title: "Credit Card Fraud Detection Capstone Project - Report"
+author: "Alessandro Corradini - Harvard Data Science Professional"
+date: "May 24, 2019"
+abstract: "This is the final assignment for the Harvard Data Science Professional Program taught by the famous Prof. of Biostatistics Rafael Irizarry from Harvard University. In this capstone project, we have to choose a dataset and we have to analyze it and perform our machine learning tasks in complete autonomy without external help."
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    highlight: pygments
+    keep_tex: true
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = 'center')
+```
+
+```{r, include=FALSE, echo=FALSE, eval=FALSE}
+# Install all needed libraries if it is not present
+
+if(!require(tidyverse)) install.packages("tidyverse") 
+if(!require(kableExtra)) install.packages("kableExtra")
+if(!require(tidyr)) install.packages("tidyr")
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(stringr)) install.packages("stringr")
+if(!require(ggplot2)) install.packages("ggplot2")
+if(!require(gbm)) install.packages("gbm")
+if(!require(dplyr)) install.packages("dplyr")
+if(!require(caret)) install.packages("caret")
+if(!require(xgboost)) install.packages("xgboost")
+if(!require(e1071)) install.packages("e1071")
+if(!require(class)) install.packages("class")
+if(!require(ROCR)) install.packages("ROCR")
+if(!require(randomForest)) install.packages("randomForest")
+if(!require(PRROC)) install.packages("PRROC")
+if(!require(reshape2)) install.packages("reshape2")
+```
+
+```{r, include=FALSE, echo=FALSE}
+# Loading all needed libraries
+
+library(dplyr)
+library(tidyverse)
+library(kableExtra)
+library(tidyr)
+library(ggplot2)
+library(gbm)
+library(caret)
+library(xgboost)
+library(e1071)
+library(class)
+library(lightgbm)
+library(ROCR)
+library(randomForest)
+library(PRROC)
+library(reshape2)
+```
+
+\newpage
+
+# Executive Summary
+
+It is important that credit card companies are able to recognize fraudulent credit card transactions so that customers are not charged for items that they did not purchase. The datasets contains transactions made by credit cards in September 2013 by european cardholders. 
+
+Due to imbalancing nature of the data, many observations could be predicted as False Negative, in this case Legal Transactions instead of Fraudolent Transaction. For example, a model that predict always **0** (Legal) can archieve an Accuracy of **99.8**. For that reason, the metric used for measuring the score is the **Area Under The Precision-Recall Curve (AUCPR)** instead of the traditional AUC curve. A desiderable result is an AUCPR at least greater than **0.85**.
+
+For archieving the task of classifying credit card fraud detection, they are trained several algorithms such as Naive Bayes Classifier, KNN, SVM, Random Forest, GBM, XGBoost and LightGBM.
+
+In this analysis, a XGBoost Model is capable of an AUCPR of **0.8623** and this is great! 
+
+# Exploratory Data Analysis
+
+## The Dataset
+
+```{r, echo=FALSE, include=TRUE}
+## Loading the dataset
+creditcard <- read.csv("creditcard.csv")
+```
+
+This dataset presents transactions that occurred in two days, where we have **492 frauds** out of **284,807 transactions**. The dataset is highly unbalanced, the positive class (frauds) account for 0.172% of all transactions. 
+
+The dataset contains only numerical input variables which are the result of a PCA transformation. Unfortunately, due to confidentiality issues, we cannot provide the original features and more background information about the data. Features V1, V2, ... V28 are the principal components obtained with PCA, the only features which have not been transformed with PCA are 'Time' and 'Amount'.
+
+**Source**
+
+https://www.kaggle.com/mlg-ulb/creditcardfraud
+
+**Dimensions**
+
+```{r, echo=FALSE, include=TRUE}
+# Check dimensions
+
+data.frame("Length" = nrow(creditcard), "Columns" = ncol(creditcard)) %>%
+kable() %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                 position = "center",
+                 font_size = 10,
+                 full_width = FALSE)
+```
+
+**Imbalanced Dataset**
+
+This is a very imbalanced dataset. It means that there are few rows that represent a class. In this case, only **492** transactions are frauds, represented by **1** and **284315** are not, represented by **0**. 
+
+```{r, echo=FALSE, include=TRUE}
+imbalanced <- data.frame(creditcard)
+
+imbalanced$Class = ifelse(creditcard$Class == 0, 'Legal', 'Fraud') %>% as.factor()
+```
+
+```{r, echo=FALSE, include=TRUE, fig.height = 7}
+# Visualize the proportion between classes
+imbalanced %>%
+  ggplot(aes(Class)) +
+  theme_minimal()  +
+  geom_bar() +
+  scale_x_discrete() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Proportions between Legal and Frauds Transactions",
+        x = "Class",
+        y = "Frequency")
+```
+
+```{r, echo=FALSE, include=TRUE}
+creditcard %>%
+  group_by(Class) %>% 
+  summarise(Count = n()) %>%
+  kable() %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                 position = "center",
+                 font_size = 10,
+                 full_width = FALSE)
+```
+\newpage
+
+**Missing Values**
+
+As the table below suggests, there aren't missing values in this dataframe.
+
+```{r, echo=FALSE, include=TRUE}
+# Find missing values
+
+sapply(creditcard, function(x) sum(is.na(x))) %>% 
+kable(col.names = c("Missing Values")) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                 position = "center",
+                 font_size = 10,
+                 full_width = FALSE)
+```
+
+**First 10 Rows of ```creditcard``` dataset**
+
+```{r, echo=FALSE, include=TRUE}
+creditcard %>%
+   select(Time, V1, V2, V3, V4, V5, V28, Amount, Class) %>%
+   head(10) %>%
+   kable() %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                 position = "center",
+                 font_size = 10,
+                 full_width = FALSE)
+```
+\newpage
+
+**Frauds Amount Distributions**
+
+Small amount of money, less or equal of one dollar are scammed more frequently.
+
+```{r, echo=FALSE, include=TRUE}
+# Frauds Amount
+
+creditcard[creditcard$Class == 1,] %>%
+  ggplot(aes(Amount)) + 
+  theme_minimal()  +
+  geom_histogram(binwidth = 40) +
+  labs(title = "Frauds Amounts Distributions",
+        x = "Amount in dollars",
+        y = "Frequency")
+```
+
+```{r, echo=FALSE, include=TRUE}
+creditcard[creditcard$Class == 1,] %>%
+  group_by(Amount) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n=10) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                 position = "center",
+                 font_size = 10,
+                 full_width = FALSE)
+```
+\newpage
+
+**Frauds over Time Distribution**
+
+There aren't correlation between ```time``` and frauds. A fraud can happen anytime. It seems not particularly useful for the modelling phase. The correlation matrix below, confirms this assumpion.
+
+```{r, echo=FALSE, include=TRUE}
+# Frauds over Time
+
+creditcard[creditcard$Class == 1,] %>%
+  ggplot(aes(Time)) + 
+  theme_minimal()  +
+  geom_histogram(binwidth = 40) +
+  labs(title = "Frauds over Time Distributions",
+        x = "Time",
+        y = "Frequency")
+```
+
+```{r, echo=FALSE, include=TRUE}
+creditcard[creditcard$Class == 1,] %>%
+  group_by(Time) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n=10) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                 position = "center",
+                 font_size = 10,
+                 full_width = FALSE)
+```
+\newpage
+
+**Correlations between each variables**
+
+```{r, echo=FALSE, include=TRUE, fig.height = 7, fig.width = 7}
+# Get lower triangle of the correlation matrix
+get_lower_tri<-function(cormat){
+  cormat[upper.tri(cormat)] <- NA
+  return(cormat)
+}
+
+# Get upper triangle of the correlation matrix
+get_upper_tri <- function(cormat){
+  cormat[lower.tri(cormat)]<- NA
+  return(cormat)
+}
+
+reorder_cormat <- function(cormat){
+  # Use correlation between variables as distance
+  dd <- as.dist((1-cormat)/2)
+  hc <- hclust(dd)
+  cormat <-cormat[hc$order, hc$order]
+}
+
+corr_matrix <- round(cor(creditcard),2)
+corr_matrix <- reorder_cormat(corr_matrix)
+
+upper_tri <- get_upper_tri(corr_matrix)
+
+melted_corr_matrix <- melt(upper_tri, na.rm = TRUE)
+
+ggplot(melted_corr_matrix, aes(Var2, Var1, fill = value)) +
+geom_tile(color = "white") +
+scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   name="Pearson\nCorrelation") +
+   theme_minimal() + 
+   theme(axis.text.x = element_text(angle = 90, vjust = 1, 
+         size = 9, hjust = 1), axis.text.y = element_text(size = 9),                    axis.title.x = element_blank(),
+         axis.title.y = element_blank(),
+         panel.grid.major = element_blank(),
+         panel.border = element_blank(),
+         panel.background = element_blank(),
+         axis.ticks = element_blank()) +
+ coord_fixed() 
+```
+\newpage
+
+# Data Pre-Processing
+
+Before continuing to build models, It have to do a little data pre-processing:
+
+1. Remove the "Time" column from the dataset. It isn't useful.
+2. Split the dataset into train, test, cv dataset.
+
+```{r, echo=FALSE, include=TRUE}
+# Set seed for reproducibility
+
+set.seed(1234)
+
+# Remove the "Time" column from the dataset
+
+creditcard$Class <- as.factor(creditcard$Class)
+creditcard <- creditcard %>% select(-Time)
+
+# Split the dataset into train, test dataset and cv
+
+train_index <- createDataPartition(
+  y = creditcard$Class, 
+  p = .6, 
+  list = F
+)
+
+train <- creditcard[train_index,]
+
+test_cv <- creditcard[-train_index,]
+
+test_index <- createDataPartition(
+  y = test_cv$Class, 
+  p = .5, 
+  list = F)
+
+test <- test_cv[test_index,]
+cv <- test_cv[-test_index,]
+
+rm(train_index, test_index, test_cv)
+```
+
+# Analysis - Models Building and Comparison
+
+## Naive Baseline Algorithm - Predict Always "Legal" Transaction
+
+Predicting always "Legal" transaction can archieve an impressive accuracy of **99.8** and an AUC of **0.92**. Because the recall and precision are **0**, it is impossible to compute the AUCPR, so that is **0**.
+
+```{r, echo=FALSE, include=TRUE}
+# Create a baseline model that predict always "legal" 
+# (aka "0") transactions and compute all metrics
+
+# Clone the creditcard dataframe
+
+baseline_model <- data.frame(creditcard)
+
+# Set Class al to Legal (0)
+
+baseline_model$Class = factor(0, c(0,1))
+
+# Make predictions
+
+pred <- prediction(
+  as.numeric(as.character(baseline_model$Class)),                        as.numeric(as.character(creditcard$Class))
+)
+
+# Compute the AUC and AUCPR
+
+auc_val_baseline <- performance(pred, "auc")
+auc_plot_baseline <- performance(pred, 'sens', 'spec')
+aucpr_plot_baseline <- performance(pred, "prec", "rec")
+
+# Make the relative plot
+
+plot(auc_plot_baseline, 
+     main=paste("AUC:", 
+     auc_val_baseline@y.values[[1]])
+)
+
+plot(aucpr_plot_baseline, main="AUCPR: 0")
+
+# Create a dataframe 'results' that contains all metrics 
+# obtained by the trained models
+
+results <- data.frame(
+  Model = "Naive Baseline - Predict Always Legal", 
+  AUC = auc_val_baseline@y.values[[1]],
+  AUCPR = 0
+)
+
+# Show results on a table
+
+results %>% 
+  kable() %>%
+  kable_styling(
+    bootstrap_options = 
+      c("striped", "hover", "condensed", "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE
+)
+```
+\newpage
+
+## Naive Bayes 
+
+A step forward is building a Naive Bayes Classifier. The performance improve a little bit: AUC is **0.92** and finally the there is an AUCPR of **0.05**. It is a poor result according to the metric of interest and it is easy to improve.
+
+```{r, echo=FALSE, include=TRUE}
+# Create a Naive Bayes Model, it will improve a little bit the 
+# results in AUC and AUCPR
+
+# Set seed 1234 for reproducibility
+
+set.seed(1234)
+
+# Build the model with Class as target and all other variables
+# as predictors
+
+naive_model <- naiveBayes(Class ~ ., data = train, laplace=1)
+
+# Predict
+
+predictions <- predict(naive_model, newdata=test)
+
+# Compute the AUC and AUCPR for the Naive Model
+
+pred <- prediction(as.numeric(predictions) , test$Class)
+
+auc_val_naive <- performance(pred, "auc")
+
+auc_plot_naive <- performance(pred, 'sens', 'spec')
+aucpr_plot_naive <- performance(pred, "prec", "rec")
+
+aucpr_val_naive <- pr.curve(
+  scores.class0 = predictions[test$Class == 1], 
+  scores.class1 = predictions[test$Class == 0],
+  curve = T,  
+  dg.compute = T
+)
+
+# Make the relative plot
+
+plot(aucpr_val_naive)
+plot(auc_plot_naive, main=paste("AUC:", auc_val_naive@y.values[[1]]))
+plot(aucpr_plot_naive, main=paste("AUCPR:", aucpr_val_naive$auc.integral))
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "Naive Bayes", 
+  AUC = auc_val_naive@y.values[[1]],
+  AUCPR = aucpr_val_naive$auc.integral
+)
+
+# Show results on a table
+
+results %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+```
+\newpage
+
+## KNN - K-Nearest Neighbors
+
+A KNN Model with k=5 can achieve a significant improvement in respect to the previous models, as regard AUCPR of **0.58** at the expense of a little drop off AUC, that is **0.81**.
+
+```{r, echo=FALSE, include=TRUE}
+# Set seed 1234 for reproducibility
+
+set.seed(1234)
+
+# Build a KNN Model with Class as Target and all other
+# variables as predictors. k is set to 5
+
+knn_model <- knn(train[,-30], test[,-30], train$Class, k=5, prob = TRUE)
+
+# Compute the AUC and AUCPR for the KNN Model
+
+pred <- prediction(
+  as.numeric(as.character(knn_model)),                                   as.numeric(as.character(test$Class))
+)
+
+auc_val_knn <- performance(pred, "auc")
+
+auc_plot_knn <- performance(pred, 'sens', 'spec')
+aucpr_plot_knn <- performance(pred, "prec", "rec")
+
+aucpr_val_knn <- pr.curve(
+  scores.class0 = knn_model[test$Class == 1], 
+  scores.class1 = knn_model[test$Class == 0],
+  curve = T,  
+  dg.compute = T
+)
+
+# Make the relative plot
+
+plot(aucpr_val_knn)
+plot(auc_plot_knn, main=paste("AUC:", auc_val_knn@y.values[[1]]))
+plot(aucpr_plot_knn, main=paste("AUCPR:", aucpr_val_knn$auc.integral))
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "K-Nearest Neighbors k=5", 
+  AUC = auc_val_knn@y.values[[1]],
+  AUCPR = aucpr_val_knn$auc.integral
+)
+
+# Show results on a table
+
+results %>%
+   kable() %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+       position = "center",
+       font_size = 10,
+       full_width = FALSE)
+```
+\newpage
+
+## SVM - Support Vector Machine
+
+The SVM Model with a Sigmoid Kernel represent a step back on all fronts because the AUCPR is **0.32** and AUC is **0.77**. 
+
+```{r, echo=FALSE, include=TRUE}
+# Set seed 1234 for reproducibility
+set.seed(1234)
+
+# Build a SVM Model with Class as Target and all other
+# variables as predictors. The kernel is set to sigmoid
+
+svm_model <- svm(Class ~ ., data = train, kernel='sigmoid')
+
+# Make predictions based on this model
+
+predictions <- predict(svm_model, newdata=test)
+
+# Compute AUC and AUCPR
+
+pred <- prediction(
+  as.numeric(as.character(predictions)),                                 as.numeric(as.character(test$Class))
+)
+
+auc_val_svm <- performance(pred, "auc")
+
+auc_plot_svm <- performance(pred, 'sens', 'spec')
+aucpr_plot_svm <- performance(pred, "prec", "rec")
+
+aucpr_val_svm <- pr.curve(
+  scores.class0 = predictions[test$Class == 1], 
+  scores.class1 = predictions[test$Class == 0],
+  curve = T,  
+  dg.compute = T
+)
+
+# Make the relative plot
+
+plot(aucpr_val_svm)
+plot(auc_plot_svm, main=paste("AUC:", auc_val_svm@y.values[[1]]))
+plot(aucpr_plot_svm, main=paste("AUCPR:", aucpr_val_svm$auc.integral))
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "SVM - Support Vector Machine",
+  AUC = auc_val_svm@y.values[[1]],
+  AUCPR = aucpr_val_svm$auc.integral)
+
+# Show results on a table
+
+results %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+```
+\newpage
+
+## Random Forest
+
+The ensemble methods are capable of a significant increase in performance. At the expense of another little drop off in terms of AUC (**0.9**) respect to the Naive Bayes model, there is a huge step forward in terms of AUCPR, that is **0.77**. This model doesn't reach the desidered performance (AUCPR > 0.85), but it's close to it. As the plot and the table below suggest, there are few predictors like **V17**, **V12** and **V14** that are particularly useful for classifying a fraud.
+ 
+```{r, echo=FALSE, include=TRUE}
+# Set seed 1234 for reproducibility
+
+set.seed(1234)
+
+# Build a Random Forest Model with Class as Target and all other
+# variables as predictors. The number of trees is set to 500
+
+rf_model <- randomForest(Class ~ ., data = train, ntree = 500)
+
+# Get the feature importance
+
+feature_imp_rf <- data.frame(importance(rf_model))
+
+# Make predictions based on this model
+
+predictions <- predict(rf_model, newdata=test)
+
+# Compute the AUC and AUPCR
+
+pred <- prediction(
+  as.numeric(as.character(predictions)),                                 as.numeric(as.character(test$Class))
+)
+
+auc_val_rf <- performance(pred, "auc")
+
+auc_plot_rf <- performance(pred, 'sens', 'spec')
+
+aucpr_plot_rf <- performance(pred, "prec", "rec", curve = T,  dg.compute = T)
+
+aucpr_val_rf <- pr.curve(scores.class0 = predictions[test$Class == 1], scores.class1 = predictions[test$Class == 0],curve = T,  dg.compute = T)
+
+# make the relative plot
+
+plot(auc_plot_rf, main=paste("AUC:", auc_val_rf@y.values[[1]]))
+plot(aucpr_plot_rf, main=paste("AUCPR:", aucpr_val_rf$auc.integral))
+plot(aucpr_val_rf)
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "Random Forest",
+  AUC = auc_val_rf@y.values[[1]],
+  AUCPR = aucpr_val_rf$auc.integral)
+
+# Show results on a table
+
+results %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+
+# Show feature importance on a table
+
+feature_imp_rf %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+```
+\newpage
+
+## GBM - Generalized Boosted Regression 
+
+The GBM performance are really good: with an AUC of **0.95** and AUCPR of **0.94**, It doesn't achieve the target for a breath. As the Random Forest model shows, the **V17** and **V14** are still relevant to predict a fraud.
+
+```{r, echo=FALSE, include=TRUE}
+# Set seet 1234 for reproducibility
+
+set.seed(1234)
+
+# Build a GBM Model with Class as Target and all other
+# variables as predictors. Distribution is bernoully, 
+# number of tree is 500
+
+gbm_model <- gbm(as.character(Class) ~ .,
+                 distribution = "bernoulli", 
+                 data = rbind(train, test), 
+                 n.trees = 500,
+                 interaction.depth = 3, 
+                 n.minobsinnode = 100, 
+                 shrinkage = 0.01, 
+                 train.fraction = 0.7,
+)
+
+# Determine the best iteration based on test data
+
+best_iter = gbm.perf(gbm_model, method = "test")
+
+# Make predictions based on this model
+
+predictions = predict.gbm(
+  gbm_model, 
+  newdata = test, 
+  n.trees = best_iter, 
+  type="response"
+)
+
+# Get feature importance
+
+feature_imp_gbm = summary(gbm_model, n.trees = best_iter)
+
+# Compute the AUC and AUPCR
+
+pred <- prediction(
+  as.numeric(as.character(predictions)),                                 as.numeric(as.character(test$Class))
+)
+
+auc_val_gbm <- performance(pred, "auc")
+
+auc_plot_gbm <- performance(pred, 'sens', 'spec')
+aucpr_plot_gbm <- performance(pred, "prec", "rec")
+
+aucpr_val_gbm <- pr.curve(
+  scores.class0 = predictions[test$Class == 1], 
+  scores.class1 = predictions[test$Class == 0],
+  curve = T,  
+  dg.compute = T
+)
+
+# Make the relative plot
+
+plot(aucpr_val_gbm)
+plot(auc_plot_gbm, main=paste("AUC:", auc_val_gbm@y.values[[1]]))
+plot(aucpr_plot_gbm, main=paste("AUCPR:", aucpr_val_gbm$auc.integral))
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "GBM - Generalized Boosted Regression",
+  AUC = auc_val_gbm@y.values[[1]],
+  AUCPR = aucpr_val_gbm$auc.integral)
+
+# Show results on a table
+
+results %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+
+# Show feature importance on a table
+
+feature_imp_gbm %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+```
+\newpage
+
+## XGBoost
+
+XGBoost are a top class model. It always stays on TOP5 (or wins them) in every competitions on Kaggle and in this case, its' very fast to train and its performance are awesome. With an AUC of **0.98** and an AUCPR of **0.86** it reach and overtake the desidered performance. As the previous model shown, **V17** and **V14** are still relevant to predict a fraud.
+
+```{r, echo=FALSE, include=TRUE}
+# Set seet 1234 for reproducibility
+
+set.seed(1234)
+
+# Prepare the training dataset
+
+xgb_train <- xgb.DMatrix(
+  as.matrix(train[, colnames(train) != "Class"]), 
+  label = as.numeric(as.character(train$Class))
+)
+
+# Prepare the test dataset
+
+xgb_test <- xgb.DMatrix(
+  as.matrix(test[, colnames(test) != "Class"]), 
+  label = as.numeric(as.character(test$Class))
+)
+
+# Prepare the cv dataset
+
+xgb_cv <- xgb.DMatrix(
+  as.matrix(cv[, colnames(cv) != "Class"]), 
+  label = as.numeric(as.character(cv$Class))
+)
+
+# Prepare the parameters list. 
+
+xgb_params <- list(
+  objective = "binary:logistic", 
+  eta = 0.1, 
+  max.depth = 3, 
+  nthread = 6, 
+  eval_metric = "aucpr"
+)
+
+# Train the XGBoost Model
+
+xgb_model <- xgb.train(
+  data = xgb_train, 
+  params = xgb_params, 
+  watchlist = list(test = xgb_test, cv = xgb_cv), 
+  nrounds = 500, 
+  early_stopping_rounds = 40,
+  verbosity = 0,
+  print_every_n = 100,
+  silent = T,
+
+)
+
+# Get feature importance
+
+feature_imp_xgb <- xgb.importance(colnames(train), model = xgb_model)
+
+xgb.plot.importance(feature_imp_xgb, rel_to_first = TRUE, xlab = "Relative importance")
+
+# Make predictions based on this model
+
+predictions = predict(
+  xgb_model, 
+  newdata = as.matrix(test[, colnames(test) != "Class"]), 
+  ntreelimit = xgb_model$bestInd
+)
+
+# Compute the AUC and AUPCR
+
+pred <- prediction(
+  as.numeric(as.character(predictions)),                                 as.numeric(as.character(test$Class))
+)
+
+auc_val_xgb <- performance(pred, "auc")
+
+auc_plot_xgb <- performance(pred, 'sens', 'spec')
+aucpr_plot_xgb <- performance(pred, "prec", "rec")
+
+aucpr_val_xgb <- pr.curve(
+  scores.class0 = predictions[test$Class == 1], 
+  scores.class1 = predictions[test$Class == 0],
+  curve = T,  
+  dg.compute = T
+)
+
+# Make the relative plot
+
+plot(auc_plot_xgb, main=paste("AUC:", auc_val_xgb@y.values[[1]]))
+plot(aucpr_plot_xgb, main=paste("AUCPR:", aucpr_val_xgb$auc.integral))
+plot(aucpr_val_xgb)
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "XGBoost",
+  AUC = auc_val_xgb@y.values[[1]],
+  AUCPR = aucpr_val_xgb$auc.integral)
+
+# Show results on a table
+
+results %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+
+# Show feature importance on a table
+
+feature_imp_xgb %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+```
+\newpage
+
+## LightGBM
+
+LightGBM is the fastest and complex implementation of GBM. It has tons of parameters and because of this it has a steep learning curve. With a small changen of the parameters, the LightGBM model is able to reach the performance of XGBoost. Because I'have more experience with the last one, the performance are a little bit worse: AUC of **0.94** and AUCPR of **0.85**, but they are all good.
+
+```{r, echo=FALSE, include=TRUE}
+# Set seet 1234 for reproducibility
+
+set.seed(1234)
+
+# Prepare the training dataset
+
+lgb_train <- lgb.Dataset(
+  as.matrix(train[, colnames(train) != "Class"]), 
+  label = as.numeric(as.character(train$Class))
+)
+
+# Prepare the test dataset
+
+lgb_test <- lgb.Dataset(
+  as.matrix(test[, colnames(test) != "Class"]), 
+  label = as.numeric(as.character(test$Class))
+)
+
+# Prepare the cvtaset
+
+lgb_cv <- lgb.Dataset(
+  as.matrix(cv[, colnames(cv) != "Class"]), 
+  label = as.numeric(as.character(cv$Class))
+)
+
+# Prepare the parameters list
+
+lgb_params = list(
+	objective = "binary", 
+	metric = "binary_error",
+	verbosity = 0
+)
+
+# Train the LightGBM Model
+
+lgb_model <- lgb.train(
+		params = lgb_params, 
+		data = lgb_train, 
+		valids = list(test = lgb_test, cv = lgb_cv), 
+		learning_rate = 0.01, 
+		nrounds = 500,
+		early_stopping_rounds = 40, 
+		eval_freq = 20
+)
+
+# Get feature importance
+
+feature_imp_lgb = lgb.importance(lgb_model, percentage = TRUE)
+
+# Make predictions based on this model
+
+predictions = predict(
+  lgb_model, 
+  data = as.matrix(test[, colnames(test) != "Class"]), 
+  n = lgb_model$best_iter)
+
+# Compute the AUC and AUPCR
+
+pred <- prediction(
+  predictions, 
+  as.numeric(as.character(test$Class))
+)
+
+auc_val_lgb <- performance(pred, "auc")
+
+auc_plot_lgb <- performance(pred, 'sens', 'spec')
+aucpr_plot_lgb <- performance(pred, "prec", "rec")
+
+aucpr_val_lgb <- pr.curve(
+  scores.class0 = predictions[test$Class == 1], 
+  scores.class1 = predictions[test$Class == 0],
+  curve = T,  
+  dg.compute = T
+)
+
+# Make the relative plot
+
+plot(aucpr_val_lgb)
+plot(auc_plot_lgb, main=paste("AUC:", auc_val_lgb@y.values[[1]]))
+plot(aucpr_plot_lgb, main=paste("AUCPR:", aucpr_val_lgb$auc.integral))
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "LightGBM",
+  AUC = auc_val_lgb@y.values[[1]],
+  AUCPR = aucpr_val_lgb$auc.integral
+  )
+
+# Show results on a table
+
+results %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+
+feature_imp_lgb %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+```
+\newpage
+
+# Results
+
+This is the summary results for all the models builted, trained and validated.
+
+```{r, echo=FALSE, include=TRUE}
+# Shows the results
+
+results %>% 
+   kable() %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+             position = "center",
+             font_size = 10,
+             full_width = FALSE)
+```
+
+# Conclusion
+
+The ensemble methods once again confirm themselves as among the best models out there. It easy to find them as a winners of numerous Kaggle's competitions or on TOP5 of them. In this task, a XGBoost model can achieve a very good AUCPR result of **0.86** and the others ensembe methods are very close to it. As the features importance plots and table show, there are few predictors like **V17** and **V14** that are particularly useful for classifying a fraud. The SMOTE technique (a technique for dealing with imbalanced data) could improve the performance a little bit.
+
+
+\newpage
+
+# Appendix
+
+## 1a - All visualization
+
+```{r, echo=FALSE, include=TRUE}
+# Imbalanced view
+imbalanced %>%
+  ggplot(aes(Class)) +
+  theme_minimal()  +
+  geom_bar() +
+  scale_x_discrete() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Proportions between Legal and Frauds Transactions",
+        x = "Class",
+        y = "Frequency")
+
+# Frauds Distribution
+creditcard[creditcard$Class == 1,] %>%
+  ggplot(aes(Amount)) + 
+  theme_minimal()  +
+  geom_histogram(binwidth = 40) +
+  labs(title = "Frauds Amounts Distributions",
+        x = "Amount in dollars",
+        y = "Frequency")
+
+creditcard <- read.csv('creditcard.csv')
+
+# Frauds over Time
+creditcard[creditcard$Class == 1,] %>%
+  ggplot(aes(Time)) + 
+  theme_minimal()  +
+  geom_histogram(binwidth = 40) +
+  labs(title = "Frauds over Time Distributions",
+        x = "Time",
+        y = "Frequency")
+
+## Correlation
+ggplot(melted_corr_matrix, aes(Var2, Var1, fill = value)) +
+geom_tile(color = "white") +
+scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   name="Pearson\nCorrelation") +
+   theme_minimal() + 
+   theme(axis.text.x = element_text(angle = 90, vjust = 1, 
+         size = 9, hjust = 1), axis.text.y = element_text(size = 9),                    axis.title.x = element_blank(),
+         axis.title.y = element_blank(),
+         panel.grid.major = element_blank(),
+         panel.border = element_blank(),
+         panel.background = element_blank(),
+         axis.ticks = element_blank()) +
+ coord_fixed() 
+
+# Baseline
+plot(auc_plot_baseline, 
+     main=paste("AUC:", 
+     auc_val_baseline@y.values[[1]])
+)
+
+plot(aucpr_plot_baseline, main="AUCPR: 0")
+
+# Naive
+plot(aucpr_val_naive)
+plot(auc_plot_naive, main=paste("AUC:", auc_val_naive@y.values[[1]]))
+plot(aucpr_plot_naive, main=paste("AUCPR:", aucpr_val_naive$auc.integral))
+
+# KNN
+plot(aucpr_val_knn)
+plot(auc_plot_knn, main=paste("AUC:", auc_val_knn@y.values[[1]]))
+plot(aucpr_plot_knn, main=paste("AUCPR:", aucpr_val_knn$auc.integral))
+
+# SVM
+plot(aucpr_val_svm)
+plot(auc_plot_svm, main=paste("AUC:", auc_val_svm@y.values[[1]]))
+plot(aucpr_plot_svm, main=paste("AUCPR:", aucpr_val_svm$auc.integral))
+
+# Random Forest
+plot(auc_plot_rf, main=paste("AUC:", auc_val_rf@y.values[[1]]))
+plot(aucpr_plot_rf, main=paste("AUCPR:", aucpr_val_rf$auc.integral))
+plot(aucpr_val_rf)
+
+# GBM
+best_iter = gbm.perf(gbm_model, method = "test")
+feature_imp_gbm = summary(gbm_model, n.trees = best_iter)
+
+
+# XGBOOST
+plot(auc_plot_xgb, main=paste("AUC:", auc_val_xgb@y.values[[1]]))
+plot(aucpr_plot_xgb, main=paste("AUCPR:", aucpr_val_xgb$auc.integral))
+plot(aucpr_val_xgb)
+
+# LightGBM
+plot(aucpr_val_lgb)
+plot(auc_plot_lgb, main=paste("AUC:", auc_val_lgb@y.values[[1]]))
+plot(aucpr_plot_lgb, main=paste("AUCPR:", aucpr_val_lgb$auc.integral))
+```
+
+## 1b - Code used in this report - Credit Card Fraud Detection Project - Code.R
+
+```
+# Install all needed libraries if it is not present
+
+if(!require(tidyverse)) install.packages("tidyverse") 
+if(!require(kableExtra)) install.packages("kableExtra")
+if(!require(tidyr)) install.packages("tidyr")
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(stringr)) install.packages("stringr")
+if(!require(ggplot2)) install.packages("ggplot2")
+if(!require(gbm)) install.packages("gbm")
+if(!require(dplyr)) install.packages("dplyr")
+if(!require(caret)) install.packages("caret")
+if(!require(xgboost)) install.packages("xgboost")
+if(!require(e1071)) install.packages("e1071")
+if(!require(class)) install.packages("class")
+if(!require(ROCR)) install.packages("ROCR")
+if(!require(randomForest)) install.packages("randomForest")
+if(!require(PRROC)) install.packages("PRROC")
+if(!require(reshape2)) install.packages("reshape2")
+
+# Loading all needed libraries
+
+library(dplyr)
+library(tidyverse)
+library(kableExtra)
+library(tidyr)
+library(ggplot2)
+library(gbm)
+library(caret)
+library(xgboost)
+library(e1071)
+library(class)
+library(lightgbm)
+library(ROCR)
+library(randomForest)
+library(PRROC)
+library(reshape2)
+
+## Loading the dataset
+
+creditcard <- read.csv("creditcard.csv")
+
+# Check dimensions
+
+data.frame("Length" = nrow(creditcard), "Columns" = ncol(creditcard)) %>%
+kable() %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                 position = "center",
+                 font_size = 10,
+                 full_width = FALSE)
+                 
+imbalanced <- data.frame(creditcard)
+
+imbalanced$Class = ifelse(creditcard$Class == 0, 'Legal', 'Fraud') %>% as.factor()
+
+# Visualize the proportion between classes
+
+imbalanced %>%
+  ggplot(aes(Class)) +
+  theme_minimal()  +
+  geom_bar() +
+  scale_x_discrete() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Proportions between Legal and Frauds Transactions",
+        x = "Class",
+        y = "Frequency")
+        
+# Find missing values
+
+sapply(creditcard, function(x) sum(is.na(x))) %>% 
+kable(col.names = c("Missing Values")) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                 position = "center",
+                 font_size = 10,
+                 full_width = FALSE)
+                 
+# Frauds Amount
+
+creditcard[creditcard$Class == 1,] %>%
+  ggplot(aes(Amount)) + 
+  theme_minimal()  +
+  geom_histogram(binwidth = 40) +
+  labs(title = "Frauds Amounts Distributions",
+        x = "Amount in dollars",
+        y = "Frequency")
+
+creditcard[creditcard$Class == 1,] %>%
+  group_by(Amount) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n=10) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                 position = "center",
+                 font_size = 10,
+                 full_width = FALSE)
+                 
+# Frauds over Time
+
+creditcard[creditcard$Class == 1,] %>%
+  ggplot(aes(Time)) + 
+  theme_minimal()  +
+  geom_histogram(binwidth = 40) +
+  labs(title = "Frauds over Time Distributions",
+        x = "Time",
+        y = "Frequency")
+
+creditcard[creditcard$Class == 1,] %>%
+  group_by(Time) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n=10) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                 position = "center",
+                 font_size = 10,
+                 full_width = FALSE)
+
+# Get lower triangle of the correlation matrix
+
+get_lower_tri<-function(cormat){
+  cormat[upper.tri(cormat)] <- NA
+  return(cormat)
+}
+
+# Get upper triangle of the correlation matrix
+
+get_upper_tri <- function(cormat){
+  cormat[lower.tri(cormat)]<- NA
+  return(cormat)
+}
+
+reorder_cormat <- function(cormat){
+  # Use correlation between variables as distance
+  dd <- as.dist((1-cormat)/2)
+  hc <- hclust(dd)
+  cormat <-cormat[hc$order, hc$order]
+}
+
+corr_matrix <- round(cor(creditcard),2)
+corr_matrix <- reorder_cormat(corr_matrix)
+
+upper_tri <- get_upper_tri(corr_matrix)
+
+melted_corr_matrix <- melt(upper_tri, na.rm = TRUE)
+
+ggplot(melted_corr_matrix, aes(Var2, Var1, fill = value)) +
+geom_tile(color = "white") +
+scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   name="Pearson\nCorrelation") +
+   theme_minimal() + 
+   theme(axis.text.x = element_text(angle = 90, vjust = 1, 
+         size = 9, hjust = 1), axis.text.y = element_text(size = 9),                    axis.title.x = element_blank(),
+         axis.title.y = element_blank(),
+         panel.grid.major = element_blank(),
+         panel.border = element_blank(),
+         panel.background = element_blank(),
+         axis.ticks = element_blank()) +
+ coord_fixed()
+ 
+# Set seed for reproducibility
+
+set.seed(1234)
+
+# Remove the "Time" column from the dataset
+
+creditcard$Class <- as.factor(creditcard$Class)
+creditcard <- creditcard %>% select(-Time)
+
+# Split the dataset into train, test dataset and cv
+
+train_index <- createDataPartition(
+  y = creditcard$Class, 
+  p = .6, 
+  list = F
+)
+
+train <- creditcard[train_index,]
+
+test_cv <- creditcard[-train_index,]
+
+test_index <- createDataPartition(
+  y = test_cv$Class, 
+  p = .5, 
+  list = F)
+
+test <- test_cv[test_index,]
+cv <- test_cv[-test_index,]
+
+rm(train_index, test_index, test_cv)
+ 
+# Create a baseline model that predict always "legal" 
+# (aka "0") transactions and compute all metrics
+
+# Clone the creditcard dataframe
+
+baseline_model <- data.frame(creditcard)
+
+# Set Class al to Legal (0)
+
+baseline_model$Class = factor(0, c(0,1))
+
+# Make predictions
+
+pred <- prediction(
+  as.numeric(as.character(baseline_model$Class)),                        as.numeric(as.character(creditcard$Class))
+)
+
+# Compute the AUC and AUCPR
+
+auc_val_baseline <- performance(pred, "auc")
+auc_plot_baseline <- performance(pred, 'sens', 'spec')
+aucpr_plot_baseline <- performance(pred, "prec", "rec")
+
+# Make the relative plot
+
+plot(auc_plot_baseline, 
+     main=paste("AUC:", 
+     auc_val_baseline@y.values[[1]])
+)
+
+plot(aucpr_plot_baseline, main="AUCPR: 0")
+
+# Create a dataframe 'results' that contains all metrics 
+# obtained by the trained models
+
+results <- data.frame(
+  Model = "Naive Baseline - Predict Always Legal", 
+  AUC = auc_val_baseline@y.values[[1]],
+  AUCPR = 0
+)
+
+# Show results on a table
+
+results %>% 
+  kable() %>%
+  kable_styling(
+    bootstrap_options = 
+      c("striped", "hover", "condensed", "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE
+) 
+ 
+# Create a Naive Bayes Model, it will improve a little bit the 
+# results in AUC and AUCPR
+
+# Set seed 1234 for reproducibility
+
+set.seed(1234)
+
+# Build the model with Class as target and all other variables
+# as predictors
+
+naive_model <- naiveBayes(Class ~ ., data = train, laplace=1)
+
+# Predict
+
+predictions <- predict(naive_model, newdata=test)
+
+# Compute the AUC and AUCPR for the Naive Model
+
+pred <- prediction(as.numeric(predictions) , test$Class)
+
+auc_val_naive <- performance(pred, "auc")
+
+auc_plot_naive <- performance(pred, 'sens', 'spec')
+aucpr_plot_naive <- performance(pred, "prec", "rec")
+
+aucpr_val_naive <- pr.curve(
+  scores.class0 = predictions[test$Class == 1], 
+  scores.class1 = predictions[test$Class == 0],
+  curve = T,  
+  dg.compute = T
+)
+
+# Make the relative plot
+
+plot(aucpr_val_naive)
+plot(auc_plot_naive, main=paste("AUC:", auc_val_naive@y.values[[1]]))
+plot(aucpr_plot_naive, main=paste("AUCPR:", aucpr_val_naive$auc.integral))
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "Naive Bayes", 
+  AUC = auc_val_naive@y.values[[1]],
+  AUCPR = aucpr_val_naive$auc.integral
+)
+
+# Show results on a table
+
+results %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE) 
+ 
+# Set seed 1234 for reproducibility
+
+set.seed(1234)
+
+# Build a KNN Model with Class as Target and all other
+# variables as predictors. k is set to 5
+
+knn_model <- knn(train[,-30], test[,-30], train$Class, k=5, prob = TRUE)
+
+# Compute the AUC and AUCPR for the KNN Model
+
+pred <- prediction(
+  as.numeric(as.character(knn_model)),                                   as.numeric(as.character(test$Class))
+)
+
+auc_val_knn <- performance(pred, "auc")
+
+auc_plot_knn <- performance(pred, 'sens', 'spec')
+aucpr_plot_knn <- performance(pred, "prec", "rec")
+
+aucpr_val_knn <- pr.curve(
+  scores.class0 = knn_model[test$Class == 1], 
+  scores.class1 = knn_model[test$Class == 0],
+  curve = T,  
+  dg.compute = T
+)
+
+# Make the relative plot
+
+plot(aucpr_val_knn)
+plot(auc_plot_knn, main=paste("AUC:", auc_val_knn@y.values[[1]]))
+plot(aucpr_plot_knn, main=paste("AUCPR:", aucpr_val_knn$auc.integral))
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "K-Nearest Neighbors k=5", 
+  AUC = auc_val_knn@y.values[[1]],
+  AUCPR = aucpr_val_knn$auc.integral
+)
+
+# Show results on a table
+
+results %>%
+   kable() %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+       position = "center",
+       font_size = 10,
+       full_width = FALSE) 
+ 
+# Set seed 1234 for reproducibility
+
+set.seed(1234)
+
+# Build a SVM Model with Class as Target and all other
+# variables as predictors. The kernel is set to sigmoid
+
+svm_model <- svm(Class ~ ., data = train, kernel='sigmoid')
+
+# Make predictions based on this model
+
+predictions <- predict(svm_model, newdata=test)
+
+# Compute AUC and AUCPR
+
+pred <- prediction(
+  as.numeric(as.character(predictions)),                                 as.numeric(as.character(test$Class))
+)
+
+auc_val_svm <- performance(pred, "auc")
+
+auc_plot_svm <- performance(pred, 'sens', 'spec')
+aucpr_plot_svm <- performance(pred, "prec", "rec")
+
+aucpr_val_svm <- pr.curve(
+  scores.class0 = predictions[test$Class == 1], 
+  scores.class1 = predictions[test$Class == 0],
+  curve = T,  
+  dg.compute = T
+)
+
+# Make the relative plot
+
+plot(aucpr_val_svm)
+plot(auc_plot_svm, main=paste("AUC:", auc_val_svm@y.values[[1]]))
+plot(aucpr_plot_svm, main=paste("AUCPR:", aucpr_val_svm$auc.integral))
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "SVM - Support Vector Machine",
+  AUC = auc_val_svm@y.values[[1]],
+  AUCPR = aucpr_val_svm$auc.integral)
+
+# Show results on a table
+
+results %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+ 
+# Set seed 1234 for reproducibility
+
+set.seed(1234)
+
+# Build a Random Forest Model with Class as Target and all other
+# variables as predictors. The number of trees is set to 500
+
+rf_model <- randomForest(Class ~ ., data = train, ntree = 500)
+
+# Get the feature importance
+
+feature_imp_rf <- data.frame(importance(rf_model))
+
+# Make predictions based on this model
+
+predictions <- predict(rf_model, newdata=test)
+
+# Compute the AUC and AUPCR
+
+pred <- prediction(
+  as.numeric(as.character(predictions)),                                 as.numeric(as.character(test$Class))
+)
+
+auc_val_rf <- performance(pred, "auc")
+
+auc_plot_rf <- performance(pred, 'sens', 'spec')
+
+aucpr_plot_rf <- performance(pred, "prec", "rec", curve = T,  dg.compute = T)
+
+aucpr_val_rf <- pr.curve(scores.class0 = predictions[test$Class == 1], scores.class1 = predictions[test$Class == 0],curve = T,  dg.compute = T)
+
+# make the relative plot
+
+plot(auc_plot_rf, main=paste("AUC:", auc_val_rf@y.values[[1]]))
+plot(aucpr_plot_rf, main=paste("AUCPR:", aucpr_val_rf$auc.integral))
+plot(aucpr_val_rf)
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "Random Forest",
+  AUC = auc_val_rf@y.values[[1]],
+  AUCPR = aucpr_val_rf$auc.integral)
+
+# Show results on a table
+
+results %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+
+# Show feature importance on a table
+
+feature_imp_rf %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+ 
+# Set seet 1234 for reproducibility
+
+set.seed(1234)
+
+# Build a GBM Model with Class as Target and all other
+# variables as predictors. Distribution is bernoully, 
+# number of tree is 500
+
+gbm_model <- gbm(as.character(Class) ~ .,
+                 distribution = "bernoulli", 
+                 data = rbind(train, test), 
+                 n.trees = 500,
+                 interaction.depth = 3, 
+                 n.minobsinnode = 100, 
+                 shrinkage = 0.01, 
+                 train.fraction = 0.7,
+)
+
+# Determine the best iteration based on test data
+
+best_iter = gbm.perf(gbm_model, method = "test")
+
+# Make predictions based on this model
+
+predictions = predict.gbm(
+  gbm_model, 
+  newdata = test, 
+  n.trees = best_iter, 
+  type="response"
+)
+
+# Get feature importance
+
+feature_imp_gbm = summary(gbm_model, n.trees = best_iter)
+
+# Compute the AUC and AUPCR
+
+pred <- prediction(
+  as.numeric(as.character(predictions)),                                 as.numeric(as.character(test$Class))
+)
+
+auc_val_gbm <- performance(pred, "auc")
+
+auc_plot_gbm <- performance(pred, 'sens', 'spec')
+aucpr_plot_gbm <- performance(pred, "prec", "rec")
+
+aucpr_val_gbm <- pr.curve(
+  scores.class0 = predictions[test$Class == 1], 
+  scores.class1 = predictions[test$Class == 0],
+  curve = T,  
+  dg.compute = T
+)
+
+# Make the relative plot
+
+plot(aucpr_val_gbm)
+plot(auc_plot_gbm, main=paste("AUC:", auc_val_gbm@y.values[[1]]))
+plot(aucpr_plot_gbm, main=paste("AUCPR:", aucpr_val_gbm$auc.integral))
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "GBM - Generalized Boosted Regression",
+  AUC = auc_val_gbm@y.values[[1]],
+  AUCPR = aucpr_val_gbm$auc.integral)
+
+# Show results on a table
+
+results %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+
+# Show feature importance on a table
+
+feature_imp_gbm %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE) 
+ 
+# Set seet 1234 for reproducibility
+
+set.seed(1234)
+
+# Prepare the training dataset
+
+xgb_train <- xgb.DMatrix(
+  as.matrix(train[, colnames(train) != "Class"]), 
+  label = as.numeric(as.character(train$Class))
+)
+
+# Prepare the test dataset
+
+xgb_test <- xgb.DMatrix(
+  as.matrix(test[, colnames(test) != "Class"]), 
+  label = as.numeric(as.character(test$Class))
+)
+
+# Prepare the cv dataset
+
+xgb_cv <- xgb.DMatrix(
+  as.matrix(cv[, colnames(cv) != "Class"]), 
+  label = as.numeric(as.character(cv$Class))
+)
+
+# Prepare the parameters list. 
+
+xgb_params <- list(
+  objective = "binary:logistic", 
+  eta = 0.1, 
+  max.depth = 3, 
+  nthread = 6, 
+  eval_metric = "aucpr"
+)
+
+# Train the XGBoost Model
+
+xgb_model <- xgb.train(
+  data = xgb_train, 
+  params = xgb_params, 
+  watchlist = list(test = xgb_test, cv = xgb_cv), 
+  nrounds = 500, 
+  early_stopping_rounds = 40, 
+  print_every_n = 20
+)
+
+# Get feature importance
+
+feature_imp_xgb <- xgb.importance(colnames(train), model = xgb_model)
+
+xgb.plot.importance(feature_imp_xgb, rel_to_first = TRUE, xlab = "Relative importance")
+
+# Make predictions based on this model
+
+predictions = predict(
+  xgb_model, 
+  newdata = as.matrix(test[, colnames(test) != "Class"]), 
+  ntreelimit = xgb_model$bestInd
+)
+
+# Compute the AUC and AUPCR
+
+pred <- prediction(
+  as.numeric(as.character(predictions)),                                 as.numeric(as.character(test$Class))
+)
+
+auc_val_xgb <- performance(pred, "auc")
+
+auc_plot_xgb <- performance(pred, 'sens', 'spec')
+aucpr_plot_xgb <- performance(pred, "prec", "rec")
+
+aucpr_val_xgb <- pr.curve(
+  scores.class0 = predictions[test$Class == 1], 
+  scores.class1 = predictions[test$Class == 0],
+  curve = T,  
+  dg.compute = T
+)
+
+# Make the relative plot
+
+plot(auc_plot_xgb, main=paste("AUC:", auc_val_xgb@y.values[[1]]))
+plot(aucpr_plot_xgb, main=paste("AUCPR:", aucpr_val_xgb$auc.integral))
+plot(aucpr_val_xgb)
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "XGBoost",
+  AUC = auc_val_xgb@y.values[[1]],
+  AUCPR = aucpr_val_xgb$auc.integral)
+
+# Show results on a table
+
+results %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+
+# Show feature importance on a table
+
+feature_imp_xgb %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+      
+# Set seet 1234 for reproducibility
+
+set.seed(1234)
+
+# Prepare the training dataset
+
+lgb_train <- lgb.Dataset(
+  as.matrix(train[, colnames(train) != "Class"]), 
+  label = as.numeric(as.character(train$Class))
+)
+
+# Prepare the test dataset
+
+lgb_test <- lgb.Dataset(
+  as.matrix(test[, colnames(test) != "Class"]), 
+  label = as.numeric(as.character(test$Class))
+)
+
+# Prepare the cvtaset
+
+lgb_cv <- lgb.Dataset(
+  as.matrix(cv[, colnames(cv) != "Class"]), 
+  label = as.numeric(as.character(cv$Class))
+)
+
+# Prepare the parameters list
+
+lgb_params = list(
+	objective = "binary", 
+	metric = "binary_error"
+)
+
+# Train the LightGBM Model
+
+lgb_model <- lgb.train(
+		params = lgb_params, 
+		data = lgb_train, 
+		valids = list(test = lgb_test, cv = lgb_cv), 
+		learning_rate = 0.01, 
+		nrounds = 500,
+		early_stopping_rounds = 40, 
+		eval_freq = 20
+)
+
+# Get feature importance
+
+feature_imp_lgb = lgb.importance(lgb_model, percentage = TRUE)
+
+# Make predictions based on this model
+
+predictions = predict(
+  lgb_model, 
+  data = as.matrix(test[, colnames(test) != "Class"]), 
+  n = lgb_model$best_iter)
+
+# Compute the AUC and AUPCR
+
+pred <- prediction(
+  predictions, 
+  as.numeric(as.character(test$Class))
+)
+
+auc_val_lgb <- performance(pred, "auc")
+
+auc_plot_lgb <- performance(pred, 'sens', 'spec')
+aucpr_plot_lgb <- performance(pred, "prec", "rec")
+
+aucpr_val_lgb <- pr.curve(
+  scores.class0 = predictions[test$Class == 1], 
+  scores.class1 = predictions[test$Class == 0],
+  curve = T,  
+  dg.compute = T
+)
+
+# Make the relative plot
+
+plot(aucpr_val_lgb)
+plot(auc_plot_lgb, main=paste("AUC:", auc_val_lgb@y.values[[1]]))
+plot(aucpr_plot_lgb, main=paste("AUCPR:", aucpr_val_lgb$auc.integral))
+
+# Adding the respective metrics to the results dataset
+
+results <- results %>% add_row(
+  Model = "LightGBM",
+  AUC = auc_val_lgb@y.values[[1]],
+  AUCPR = aucpr_val_lgb$auc.integral
+  )
+
+# Show results on a table
+
+results %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+
+feature_imp_lgb %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed",           "responsive"),
+      position = "center",
+      font_size = 10,
+      full_width = FALSE)
+```
+
+## 1c - Enviroment
+
+```{r, echo=FALSE, include=TRUE}
+print("Operating System:")
+version
+```
+
+```{r, echo=FALSE, include=TRUE}
+print("All installed packages")
+installed.packages()
+```
+
+\newpage
+
+## 2 - Acknowledgement
+
+* Andrea Dal Pozzolo, Olivier Caelen, Reid A. Johnson and Gianluca Bontempi. [Calibrating Probability with Undersampling for Unbalanced Classification.](https://www.researchgate.net/publication/283349138_Calibrating_Probability_with_Undersampling_for_Unbalanced_Classification) In Symposium on Computational Intelligence and Data Mining (CIDM), IEEE, 2015
+* Dal Pozzolo, Andrea; Caelen, Olivier; Le Borgne, Yann-Ael; Waterschoot, Serge; Bontempi, Gianluca. [Learned lessons in credit card fraud detection from a practitioner perspective](https://www.researchgate.net/publication/260837261_Learned_lessons_in_credit_card_fraud_detection_from_a_practitioner_perspective), Expert systems with applications,41,10,4915-4928,2014, Pergamon
+* Dal Pozzolo, Andrea; Boracchi, Giacomo; Caelen, Olivier; Alippi, Cesare; Bontempi, Gianluca. [Credit card fraud detection: a realistic modeling and a novel learning strategy,](https://www.researchgate.net/publication/319867396_Credit_Card_Fraud_Detection_A_Realistic_Modeling_and_a_Novel_Learning_Strategy) IEEE transactions on neural networks and learning systems,29,8,3784-3797,2018,IEEE
+* Dal Pozzolo, Andrea [Adaptive Machine learning for credit card fraud detection](http://di.ulb.ac.be/map/adalpozz/pdf/Dalpozzolo2015PhD.pdf) ULB MLG PhD thesis (supervised by G. Bontempi)
+* Carcillo, Fabrizio; Dal Pozzolo, Andrea; Le Borgne, Yann-Aël; Caelen, Olivier; Mazzer, Yannis; Bontempi, Gianluca. [Scarff: a scalable framework for streaming credit card fraud detection with Spark](https://www.researchgate.net/publication/319616537_SCARFF_a_Scalable_Framework_for_Streaming_Credit_Card_Fraud_Detection_with_Spark), Information fusion,41, 182-194,2018,Elsevier
+* Carcillo, Fabrizio; Le Borgne, Yann-Aël; Caelen, Olivier; Bontempi, Gianluca. [Streaming active learning strategies for real-life credit card fraud detection: assessment and visualization,](https://www.researchgate.net/publication/324615588_Streaming_Active_Learning_Strategies_for_Real-Life_Credit_Card_Fraud_Detection_Assessment_and_Visualization) International Journal of Data Science and Analytics, 5,4,285-300,2018,Springer International Publishing
