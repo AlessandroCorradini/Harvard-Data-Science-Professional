@@ -1,4 +1,4 @@
-# Data Science: Visualization - PH125.1x
+# Data Science: Visualization - PH125.2x
 
 <br/>
 
@@ -26,7 +26,7 @@ This course cover:
 <br/>
 
 ## Certificate of Completition
-You can see the [Certificate of Completition](https://github.com/AlessandroCorradini/Certificates/blob/master/Edx%20-%20Harvard%20University%20-%20PH525.1x%20Statistics%20and%20R.pdf) and other certificates in my [Certificates Repo](https://github.com/AlessandroCorradini/Certificates) that contains all my certificates obtained through my journey as a self-made Data Science and better developer.
+You can see the [Certificate of Completition](https://github.com/AlessandroCorradini/Certificates/blob/master/Edx%20-%20Harvard%20University%20-%20PH525.2x%20Introduction%20to%20Linear%20Models%20and%20Matrix%20Algebra%20Certificate.pdf) and other certificates in my [Certificates Repo](https://github.com/AlessandroCorradini/Certificates) that contains all my certificates obtained through my journey as a self-made Data Science and better developer.
 
 <br/>
 
