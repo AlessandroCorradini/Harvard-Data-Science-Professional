@@ -50,7 +50,7 @@ Your project submission will be graded both by your peers and by a staff member.
 <br/>
 
 ## Certificate of Completition
-You can see the [Certificate of Completition - TODO](TO-DO) and other certificates in my [Certificates Repo](https://github.com/AlessandroCorradini/Certificates) that contains all my certificates obtained through my journey as a self-made Data Science and better developer.
+You can see the [Certificate of Completition](https://github.com/AlessandroCorradini/Certificates/blob/master/EdX%20-%20Harvard%20University%20-%20PH125.9x%20Data%20Science%20Capstone.pdf) and other certificates in my [Certificates Repo](https://github.com/AlessandroCorradini/Certificates) that contains all my certificates obtained through my journey as a self-made Data Science and better developer.
 
 ### Disclaimer
 **Please, don't fork or copy this repository.**
