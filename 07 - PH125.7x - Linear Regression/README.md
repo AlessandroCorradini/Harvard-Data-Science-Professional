@@ -20,8 +20,8 @@ This course cover:
 6. [Model Fitting and Recommendation Systems](./06%20-%20Model%20Fitting%20and%20Recommendation%20Systems)
 
 
-## Certificate of Completition
-You can see the [Certificate of Completition](https://github.com/AlessandroCorradini/Certificates/blob/master/EdX%20-%20Harvard%20University%20-%20PH125.7x%20Data%20Science%20Linear%20Regression.pdf) and other certificates in my [Certificates Repo](https://github.com/AlessandroCorradini/Certificates) that contains all my certificates obtained through my journey as a self-made Data Science and better developer.
+## Certificate of Completion
+You can see the [Certificate of Completion](https://github.com/AlessandroCorradini/Certificates/blob/master/EdX%20-%20Harvard%20University%20-%20PH125.7x%20Data%20Science%20Linear%20Regression.pdf) and other certificates in my [Certificates Repo](https://github.com/AlessandroCorradini/Certificates) that contains all my certificates obtained through my journey as a self-made Data Science and better developer.
 
 
 
